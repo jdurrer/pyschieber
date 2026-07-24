@@ -28,7 +28,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Games/Entertainment",
 ]
-dependencies = "requirements.txt"
+dependencies = [
+	# Insert dependencies here
+	]
 
 # Console script entry point (replaces bin/pyschieber script)
 # Uncomment and configure if you want a CLI command like: pyschieber
@@ -48,7 +50,7 @@ packages = ["pyschieber"]
 path = "pyschieber/__init__.py"  # Read version from code
 
 # ─────────────────────────────────────────────
-# PYTEST CONFIGURATION (replaces ruff, isort, black settings)
+# PYTEST CONFIGURATION (only run tests on changed files)
 # ─────────────────────────────────────────────
 
 [tool.pytest.ini_options]

@@ -1,7 +1,5 @@
 # PySchieber
 
-[![CI](https://github.com/meringues/pyschieber/actions/workflows/ci.yml/badge.svg)](https://github.com/meringues/pyschieber/actions/workflows/ci.yml)
-
 <a href="url"><img src="/docs/images/jasskarten.gif" align="right" width="300" ></a>
 Pyschieber is an implementation of the well known Swiss Schieber Jass game.
 
