@@ -1,0 +1,5 @@
+{
+    "python.analysis.inlayHints.functionReturnTypes": true,
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python-envs.pythonProjects": []
+}

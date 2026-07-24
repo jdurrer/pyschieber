@@ -1,0 +1,72 @@
+# .pre-commit-config.yaml
+# See https://pre-commit.com for more information
+
+fail_fast: false  # Continue running all hooks even if one fails
+repos:
+  # ─────────────────────────────────────────────
+  # Universal / Language-Agnostic Hooks
+  # ─────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.(md|rst)$'           # Don't trim markdown/rst whitespace
+
+      - id: end-of-file-fixer
+        exclude_types: [markdown, yaml]
+
+      - id: check-yaml
+        args: [--unsafe]                 # Allow custom YAML constructors
+
+      - id: check-added-large-files
+        args: [--maxkb=500]              # Warn if file exceeds 500KB
+
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: debug-statements             # Catch accidental `breakpoint()`/`pdb` imports
+
+  # ─────────────────────────────────────────────
+  # Security Hooks
+  # ─────────────────────────────────────────────
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.10
+    hooks:
+      - id: bandit
+        name: Bandit (Security Scan)
+        args: [-r, -ll]                  # Recursive, medium+ severity only
+        files: "\\.py$"                  # Only run on Python files
+
+  # ─────────────────────────────────────────────
+  # Code Quality & Formatting (Python)
+  # ─────────────────────────────────────────────
+  # RUFF REPLACES: flake8, isort, pyupgrade, autoflake, and more
+  # ─────────────────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.1
+    hooks:
+      - id: ruff                         # Linting + auto-fix
+        args: [--fix, --exit-non-zero-on-fix]
+
+      - id: ruff-format                  # Code formatter (Black replacement)
+        # Note: If using ruff-format, REMOVE black + isort from config above
+
+  # ─────────────────────────────────────────────
+  # Type Checking
+  # ─────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-all                    # Type stubs for external libraries
+        args: [--show-error-codes, --no-error-summary]
+
+  # ─────────────────────────────────────────────
+  # Optional: Secret Detection (Highly Recommended)
+  # ─────────────────────────────────────────────
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: [--baseline, .secrets.baseline]
+        exclude: package-lock.json

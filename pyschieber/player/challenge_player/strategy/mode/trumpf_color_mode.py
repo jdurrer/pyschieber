@@ -12,6 +12,10 @@ class TrumpfColorMode(Mode):
         return Trumpf[self.suit.name]
 
     def calculate_mode_score(self, cards, geschoben):
+        '''
+        Implement buur, nell, x + 3 böcke
+
+        '''
         score = 0
 
         cards_by_suit = split_card_values_by_suit(cards)

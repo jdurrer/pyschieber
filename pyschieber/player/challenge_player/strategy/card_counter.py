@@ -1,6 +1,11 @@
-from pyschieber.player.challenge_player.strategy.mode.trumpf_color_mode import *
-from pyschieber.player.challenge_player.strategy.mode.top_down_mode import *
-from pyschieber.player.challenge_player.strategy.mode.bottom_up_mode import *
+from typing import List, Dict, Tuple, Any
+from pyschieber.card import Card
+from pyschieber.player.base_player import BasePlayer
+from pyschieber.trumpf import Trumpf
+
+from pyschieber.player.challenge_player.strategy.mode.trumpf_color_mode import TrumpfColorMode
+from pyschieber.player.challenge_player.strategy.mode.top_down_mode import TopDownMode
+from pyschieber.player.challenge_player.strategy.mode.bottom_up_mode import BottomUpMode
 from pyschieber.player.challenge_player.strategy.flags.doesnt_habe_card_flag import DoesntHaveCardFlag
 from pyschieber.player.challenge_player.strategy.flags.previously_had_stich_flag import PreviouslyHadStichFlag
 from pyschieber.player.challenge_player.strategy.flags.falied_to_serve_suit_flag import FailedToServeSuitFlag
@@ -11,22 +16,25 @@ from pyschieber.rules.stich_rules import stich_rules
 from pyschieber.trumpf import get_trumpf
 from pyschieber.stich import PlayedCard
 from pyschieber.suit import Suit
+from pyschieber.helpers.game_helper import split_cards_by_suit
 from math import floor
 
 
 class CardCounter:
-    def __init__(self, me):
-        self.played_cards = [[],[],[],[]]
-        self.flags = [[],[],[],[]]
-        self.played_count = 0
-        self.current_stich = {}
-        self.my_id = me.id
-        self.me = me
-        self.partner_id = (self.my_id + 2) % 4
-        self.opponent_1_id = (self.my_id+1)%4
-        self.opponent_2_id = (self.my_id+3)%4
 
-    def card_played(self, player_id, card, state):
+    def __init__(self, me: BasePlayer):
+        self.played_cards: List[List[Card]] = [[],[],[],[]]
+        self.flags: List[List[Any]] = [[],[],[],[]]
+        self.played_count: int = 0
+        self.current_stich: Dict = {}
+        self.my_id: int = me.id
+        self.me = me
+        self.partner_id: int = (self.my_id + 2) % 4
+        self.opponent_1_id: int = (self.my_id+1)%4
+        self.opponent_2_id: int = (self.my_id+3)%4
+
+
+    def card_played(self, player_id: int, card: Card, state: Dict) -> None:
         self.played_cards[player_id].append(card)
         self.played_count += 1
         self.current_stich[player_id] = card
@@ -36,11 +44,13 @@ class CardCounter:
         if self.played_count % 4 == 0:
             self.current_stich = {}
 
-    def current_round(self):
+
+    def current_round(self) -> int:
         return floor(self.played_count/4)
 
-    def update_flags(self, player_id, card, state):
-        current_stich_color = None
+
+    def update_flags(self, player_id: int, card: Card, state: Dict) -> None:
+        current_stich_color: Suit = None
         if len(state['table']) > 0:
             current_stich_color = from_string_to_card(state['table'][0]['card']).suit
 
@@ -84,74 +94,89 @@ class CardCounter:
                     self.flags[player_id].append(FailedToServeSuitFlag(current_stich_color))
                     self.flags[player_id].append(SuitVerworfenFlag(card.suit))
 
-    def round_leader(self, state):
+
+    def round_leader(self, state) -> None | Any:
         if len(self.get_table_cards()) == 0:
             return None
         return stich_rules[get_trumpf(state['trumpf'])](played_cards=self.get_table_cards()).player
 
-    def get_hand(self):
+
+    def get_hand(self) -> List[Card]:
         return self.me.cards
 
-    def get_table_cards(self):
-        cards_on_table = []
+
+    def get_table_cards(self) -> List[Card]:
+        cards_on_table: List[Card] = []
         for player_id in self.current_stich:
             cards_on_table.append(PlayedCard(player=player_id, card=self.current_stich[player_id]))
         return cards_on_table
 
-    def cards_played(self):
-        played = []
+
+    def cards_played(self) -> List[Card]:
+        played: List[Card] = []
         for x in range(0,4):
             played.extend(self.played_cards[x])
         return played
 
-    def seen_cards(self):
-        seen = []
+
+    def seen_cards(self) -> List[Card]:
+        seen: List[Card] = []
         seen.extend(self.cards_played())
         seen.extend(self.me.cards)
         return seen
 
-    def remaining_cards(self, gone):
+
+    def remaining_cards(self, gone: List[Card]) -> List[Card]:
         d = Deck()
         return [x for x in d.cards if x not in gone]
 
-    def remaining_by_suit(self, suit):
+
+    def remaining_by_suit(self, suit: Suit) -> List[Card]:
         return [x for x in self.unknown_cards() if x.suit == suit]
 
-    def unknown_cards(self):
+
+    def unknown_cards(self) -> List[Card]:
         return self.remaining_cards(self.seen_cards())
 
-    def dead_cards(self):
-        dead = []
-        current_round = int(self.played_count/4)
+
+    def dead_cards(self) -> List[Card]:
+        dead: List[Card] = []
+        current_round: int = int(self.played_count/4)
         for player_id in range(0, 4):
             dead.extend(self.played_cards[player_id][0:current_round])
         return dead
 
-    def filter_cards_of_same_suit(self, card, predicate):
+
+    def filter_cards_of_same_suit(self, card: Card, predicate: Card) -> List[Card]:
         unknown_of_same_suit = list(filter(lambda x: x.suit == card.suit, self.unknown_cards()))
         return list(filter(predicate, unknown_of_same_suit))
 
-    def filter_not_dead_cards_of_same_suit(self, card, predicate):
-        remaining_cards = self.remaining_cards(self.dead_cards())
-        remaining_of_same_suit = list(filter(lambda x: (x.suit == card.suit), remaining_cards))
+
+    def filter_not_dead_cards_of_same_suit(self, card: Card, predicate: Card) -> List[Card]:
+        remaining_cards: List[Card] = self.remaining_cards(self.dead_cards())
+        remaining_of_same_suit: List[Card] = list(filter(lambda x: (x.suit == card.suit), remaining_cards))
         return list(filter(predicate, remaining_of_same_suit))
 
-    def had_stich_previously(self, p_id):
+
+    def had_stich_previously(self, p_id: int) -> bool:
         for flag in self.flags[p_id]:
             if isinstance(flag, PreviouslyHadStichFlag):
                 return True
         return False
 
-    def has_suit_likelihood(self, player_id, suit, state):
+
+    def has_suit_likelihood(self, player_id: int, suit: Suit, state: Dict) -> float:
         return self.has_cards_likelihood(player_id, self.remaining_by_suit(suit), state)
 
-    def has_cards_likelihood(self, player_id, cards, state):
-        likelihood = 1
+
+    def has_cards_likelihood(self, player_id: int, cards: List[Card], state: Dict) -> float:
+        likelihood: float = 1
         for card in cards:
             likelihood = likelihood * (1 - self.has_card_likelihood(player_id, card, state))
         return 1 - likelihood
 
-    def has_card_likelihood(self, player_id, card, state):
+
+    def has_card_likelihood(self, player_id: int, card: Card, state: Dict) -> float:
         if card in self.get_hand() or card in [x[0] for x in self.played_cards if len(x) != 0]:
             return 0
 
@@ -184,9 +209,10 @@ class CardCounter:
         else:
             return 0
 
-    def get_suits_by_strength(self, player_id):
-        flags_of_player = self.flags[player_id]
-        weak = []
+
+    def get_suits_by_strength(self, player_id: int):
+        flags_of_player: Any = self.flags[player_id]
+        weak: List[Suit] = []
 
         for flag in flags_of_player:
             if isinstance(flag, FailedToServeSuitFlag):
@@ -204,10 +230,12 @@ class CardCounter:
 
         return list(reversed(weak))
 
-    def tossed_suits(self, player_id):
+
+    def tossed_suits(self, player_id: int) -> List[Suit]:
         return list(map(lambda y: y.color, filter(lambda x: isinstance(x, SuitVerworfenFlag), self.flags[player_id])))
 
-def get_mode(trumpf):
+
+def get_mode(trumpf: Trumpf) -> None:
     return {
         'OBE_ABE': TopDownMode(),
         'UNDE_UFE': BottomUpMode(),

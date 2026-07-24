@@ -20,3 +20,10 @@ def test_challenge():
                GreedyPlayer(name='Greedy2')]
     
     run_statistics(players=players)
+
+
+def main() -> None:
+    print('this file cannot be run by itself.')
+    
+if __name__ == '__main__':
+    main()

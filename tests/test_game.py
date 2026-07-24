@@ -6,6 +6,7 @@ from pyschieber.deck import Deck
 from pyschieber.trumpf import Trumpf
 
 from pyschieber.player.random_player import RandomPlayer
+from pyschieber.tournament import Tournament
 
 from pyschieber.game import Game, get_player_index
 from pyschieber.team import Team
@@ -27,12 +28,15 @@ def test_get_player_key(start_key, last_key):
     assert last_key == key
 
 
-def test_game():
+def test_game() -> None:
+    point_limit = 1500
+    tournament: Tournament = Tournament(point_limit=point_limit)
     random_players = [RandomPlayer(name=i) for i in range(4)]
+    [tournament.register_player(player) for player in random_players]
     team_1 = Team(players=[random_players[0], random_players[1]])
-    team_2 = Team(players=[random_players[1], random_players[2]])
+    team_2 = Team(players=[random_players[2], random_players[3]])
     teams = [team_1, team_2]
-    game = Game(teams=teams, point_limit=1500)
+    game = Game(teams=teams, point_limit=point_limit)
     game.play()
 
     for player in random_players:
@@ -57,7 +61,7 @@ def test_add_points(trumpf):
     deck = Deck()
     random_players = [RandomPlayer(name=i) for i in range(4)]
     team_1 = Team(players=[random_players[0], random_players[1]])
-    team_2 = Team(players=[random_players[1], random_players[2]])
+    team_2 = Team(players=[random_players[2], random_players[3]])
     teams = [team_1, team_2]
     game = Game(teams=teams, use_counting_factor=True)
     game.trumpf = trumpf

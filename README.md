@@ -1,6 +1,8 @@
-[![Build Status](https://travis-ci.org/Murthy10/pyschieber.svg?branch=master)](https://travis-ci.org/Murthy10/pyschieber)
+# PySchieber
+
+[![CI](https://github.com/meringues/pyschieber/actions/workflows/ci.yml/badge.svg)](https://github.com/meringues/pyschieber/actions/workflows/ci.yml)
+
 <a href="url"><img src="/docs/images/jasskarten.gif" align="right" width="300" ></a>
-# pyschieber
 Pyschieber is an implementation of the well known Swiss Schieber Jass game.
 
 As OpenAI Gym provides APIs for several popular games to learn your algorithms master these games.
@@ -9,16 +11,7 @@ Pyschieber aims to offer an API in the same manner.
 
 
 ## Usage
-To install pyschieber, simply:
-```bash
-pip install pyschieber
-
-```
-pyschieber officially supports Python 3.4, 3.5, 3.6, 3.7, 3.5-dev, 3.6-dev, 3.7-dev, nightly and PyPy3.
-
-### CLI :computer:
-Beside of the API, pyschieber provides a CLI client to play the funny Scheiber Jass game.
-Currently your opponent will be a bot choosing a random card.
+Download repo and install.
 
 After the pip installation you could run the ```pyschieber``` command on the console to play a game:
 ```bash
@@ -53,17 +46,6 @@ Geschoben: False
 
 Please chose the trumpf by the number from 0 to 6: 
 ```
-
-### Jass Challenge
-The usage of a CLI to play Schieber Jass could be boring.
-Therefore pyschieber provides a wrapper for your bots to play on the Zühlke Jass Server.
-
-The [ServerPlayer](pyschieber/player/server_player/server_player.py) takes a pyschieber conform player
-An example how to launch is provide under [Server Launcher](pyschieber/example/server_launcher.py). 
-
-For further information have a look at: 
-*  https://github.com/webplatformz/challenge
-*  https://github.com/jakeret/elbotto
 
 ## API :clipboard:
 The idea of pyschieber is to extend the game with your own implemented player.
@@ -147,6 +129,6 @@ Other player examples are the [GreedyPlayer](pyschieber/player/greedy_player/gre
 Now you should be ready to get your hands dirty to implement your own player and beat the random players Tick, Trick and Track! :trophy:
 
 ## Enhancements
-* Add Wiesen to the game
-* Beautify the CLI :trollface:
-* Provide a simple network player
+* Improve rule_based_player by ismcts (information-set monte carlo tree search)
+* create a GUI
+* create a Jasstrainer that corrects mistakes

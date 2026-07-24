@@ -11,6 +11,7 @@ class ChallengePlayer(BasePlayer):
         if len(self.cards) == 9:
             self.strategy = JassStrategy(self)
 
+
     def choose_trumpf(self, geschoben):
         allowed = False
         while not allowed:
