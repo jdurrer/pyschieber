@@ -1,44 +1,49 @@
 from __future__ import annotations
-#########################################
-##               LIBRARY               ##
-#########################################
 
-# Dependencies
-from pyschieber.player.treePlayer.strategy.mode.mode import Mode
-from pyschieber.helpers.game_helper import split_cards_by_suit
-from pyschieber.trumpf import Trumpf
-from pyschieber.player.treePlayer.strategy.flags.flags import DoesntHaveCardFlag, PreviouslyHadStichFlag, FailedToServeSuitFlag, SuitAngezogenFlag, SuitVerworfenFlag
-from pyschieber.card import from_string_to_card
-from pyschieber.player.treePlayer.helpers.helperfunctions import flatten_matrix
 from copy import deepcopy
 
 # Type Annotation
-from typing import Dict, List, Tuple, TYPE_CHECKING
-from pyschieber.card import Card
+from pyschieber.card import Card, from_string_to_card
+from pyschieber.helpers.game_helper import split_cards_by_suit
+from pyschieber.player.rulebased_player.helpers.helperfunctions import flatten_matrix
+from pyschieber.player.rulebased_player.helpers.state_dict_to_dataclass import Status
+from pyschieber.player.rulebased_player.strategy.card_counter import CardCounter
+from pyschieber.player.rulebased_player.strategy.flags.flags import (
+    DoesntHaveCardFlag,
+    FailedToServeSuitFlag,
+    PreviouslyHadStichFlag,
+    SuitAngezogenFlag,
+    SuitVerworfenFlag,
+)
+
+#########################################
+##               LIBRARY               ##
+#########################################
+# Dependencies
+from pyschieber.player.rulebased_player.strategy.mode.mode import Mode
 from pyschieber.suit import Suit
-from pyschieber.player.treePlayer.helpers.state_dict_to_dataclass import Status
-from pyschieber.player.treePlayer.strategy.card_counter import CardCounter
 
 
 class UncoloredTrumpf(Mode):
-    
     def __init__(self, card_counter: CardCounter) -> None:
         self.card_counter = card_counter
 
-
-    def sort_by_rank(self, cards: List[Card]) -> List[Card]:
-        raise NotImplementedError
-    
-
-    def get_stich_card(self, cards_by_suit: List[Tuple[Suit, List[Card]]], state: Status) -> Card | None:
+    def sort_by_rank(self, cards: list[Card]) -> list[Card]:
         raise NotImplementedError
 
-    
-    def get_tossable_card(self, available_cards: List[Card], state: Status) -> Card | None:
+    def get_stich_card(
+        self, cards_by_suit: list[tuple[Suit, list[Card]]], state: Status
+    ) -> Card | None:
         raise NotImplementedError
 
+    def get_tossable_card(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
+        raise NotImplementedError
 
-    def get_value_card(self, cards_by_suit: List[Tuple[Suit, List[Card]]], state: Status) -> None | Card:
+    def get_value_card(
+        self, cards_by_suit: list[tuple[Suit, list[Card]]], state: Status
+    ) -> None | Card:
         """Determines and returns the value card to play based on the current game state.
 
         This function evaluates all available cards and selects the one with the lowest probability of being beaten by opponents, or returns None if not applicable.
@@ -49,24 +54,28 @@ class UncoloredTrumpf(Mode):
 
         Returns:
             Card or None: The value card to play, or None if not applicable.
-        """ # TODO: delete and instead use treesearch? Or good enough and resource efficient?
+        """  # TODO: delete and instead use treesearch? Or good enough and resource efficient?
         if len(state.table) != 0:
             return None
-        opponents_beating_card: Dict[Card, int] = {}
+        opponents_beating_card: dict[Card, int] = {}
         for suit, suit_cards in cards_by_suit:
             for card in suit_cards:
                 stronger = self.stronger_cards_remaining(card)
                 if len(stronger) == 0:
                     opponents_beating_card[card] = 0
                 else:
-                    d1 = self.card_counter.has_card_likelihood(self.card_counter.opponent_1_id, card, state)
-                    d2 = self.card_counter.has_card_likelihood(self.card_counter.opponent_2_id, card, state)
-                    opponents_beating_card[card] = (d1+((1-d1)*d2))
+                    d1 = self.card_counter.has_card_likelihood(
+                        self.card_counter.opponent_1_id, card, state
+                    )
+                    d2 = self.card_counter.has_card_likelihood(
+                        self.card_counter.opponent_2_id, card, state
+                    )
+                    opponents_beating_card[card] = d1 + ((1 - d1) * d2)
         return min(opponents_beating_card, key=opponents_beating_card.get)
 
-
-
-    def get_passing_card(self, cards_by_suit: List[Tuple[Suit, List[Card]]], state: Status) -> Card | None:
+    def get_passing_card(
+        self, cards_by_suit: list[tuple[Suit, list[Card]]], state: Status
+    ) -> Card | None:
         """Selects a card to pass to the partner based on suit strength and known information.
 
         This function chooses a card to play that benefits the partner, preferring suits where the partner has the strongest card or opponents have none, otherwise selecting the best suit for the partner.
@@ -88,20 +97,39 @@ class UncoloredTrumpf(Mode):
             current_bock = self.get_current_bock(suit)
             if current_bock is None:
                 continue
-            partner_has_bock: bool = self.card_counter.has_card_likelihood(self.card_counter.partner_id, current_bock, state) == 1
-            opponents_no_card_of_suit: bool = self.card_counter.has_suit_likelihood(self.card_counter.opponent_1_id, suit, state) == 0 and self.card_counter.has_suit_likelihood(self.card_counter.opponent_2_id, suit, state) == 0
+            partner_has_bock: bool = (
+                self.card_counter.has_card_likelihood(
+                    self.card_counter.partner_id, current_bock, state
+                )
+                == 1
+            )
+            opponents_no_card_of_suit: bool = (
+                self.card_counter.has_suit_likelihood(
+                    self.card_counter.opponent_1_id, suit, state
+                )
+                == 0
+                and self.card_counter.has_suit_likelihood(
+                    self.card_counter.opponent_2_id, suit, state
+                )
+                == 0
+            )
             if partner_has_bock and opponents_no_card_of_suit:
                 return self.sort_by_rank(cards)[-1]
 
         # Play best suit for partner
-        partner_suits_by_strength = self.card_counter.get_suits_by_strength(self.card_counter.partner_id)
+        partner_suits_by_strength = self.card_counter.get_suits_by_strength(
+            self.card_counter.partner_id
+        )
         for suit in partner_suits_by_strength:
-            if cards := self.card_counter.filter_suit_cards_from_tuple(cards_by_suit, suit):
+            if cards := self.card_counter.filter_suit_cards_from_tuple(
+                cards_by_suit, suit
+            ):
                 return self.sort_by_rank(cards)[-1]
         return None
 
-
-    def get_suit_to_toss(self, available_cards: List[Card], state: Status) -> Suit | None:
+    def get_suit_to_toss(
+        self, available_cards: list[Card], state: Status
+    ) -> Suit | None:
         """Determines which suit to toss based on the current hand and game state.
 
         This function selects a suit to discard, preferring suits already tossed, or otherwise the suit with the highest minimum bock distance.
@@ -124,20 +152,23 @@ class UncoloredTrumpf(Mode):
                 if self.bock_distance(card, state) != 0:
                     return suit
 
-        bd_suits: List[Tuple[Suit, int]] = []
+        bd_suits: list[tuple[Suit, int]] = []
         for suit, suit_cards in cards_by_suit:
             if suit not in tossed_suits:
-                bock_distances: List[int] = []
-                bock_distances.extend(self.bock_distance(card, state) for card in suit_cards)
+                bock_distances: list[int] = []
+                bock_distances.extend(
+                    self.bock_distance(card, state) for card in suit_cards
+                )
                 if bock_distances:
                     bd_suits.append((suit, min(bock_distances)))
                 else:
                     bd_suits.append((suit, 0))
 
-        return max(bd_suits,key=lambda item:item[1])[0] if bd_suits else None
+        return max(bd_suits, key=lambda item: item[1])[0] if bd_suits else None
 
-
-    def can_make_all_stich(self, cards_by_suit: List[Tuple[Suit, List[Card]]], state) -> bool:
+    def can_make_all_stich(
+        self, cards_by_suit: list[tuple[Suit, list[Card]]], state
+    ) -> bool:
         """Checks whether all relevant cards in the player's hand behave like bocks (pseudo-bocks).
 
         This function evaluates the current round color, the player's hand, and the remaining cards to determine if, for every suit the player holds, their cards are as strong as the strongest remaining cards of that suit.
@@ -157,12 +188,14 @@ class UncoloredTrumpf(Mode):
         # check if we can win stich.
         cards_by_suit_dict = dict(cards_by_suit)
         round_color = self.card_counter.get_round_color(state)
-        have_cards_of_round_color = bool(cards_by_suit_dict.get(round_color)) # checks if key is present and list of cards non-empty.
+        have_cards_of_round_color = bool(
+            cards_by_suit_dict.get(round_color)
+        )  # checks if key is present and list of cards non-empty.
 
         # There are cards on the table and we do not have the round color -> cannot win stich.
         if round_color is not None and not have_cards_of_round_color:
             return False
-        
+
         # There are cards on the table and we do have the round color -> check if we can win stich.
         if round_color is not None and have_cards_of_round_color:
             current_bock = self.get_current_bock(round_color)
@@ -172,7 +205,9 @@ class UncoloredTrumpf(Mode):
                 handcards.remove(current_bock)
 
         # get all remaining cards.
-        remaining_cards = self.card_counter.remaining_cards(self.card_counter.cards_played())
+        remaining_cards = self.card_counter.remaining_cards(
+            self.card_counter.cards_played()
+        )
         remaining_cards_by_suit = dict(split_cards_by_suit(remaining_cards))
 
         # filter cards such that only our suits remain (because only those will be relevant, as we can decide which suit is to be played.)
@@ -186,8 +221,9 @@ class UncoloredTrumpf(Mode):
                     return False
         return True
 
-
-    def should_win_stich_last_player(self, my_cards_by_suit: List[Tuple[Suit, List[Card]]], state: Status) -> bool:
+    def should_win_stich_last_player(
+        self, my_cards_by_suit: list[tuple[Suit, list[Card]]], state: Status
+    ) -> bool:
         """Determines if the player should try to win the stich as the last player.
 
         This function checks if the player is last to play, no other players have cards of the round color, and the player has more than one card of the round color.
@@ -201,12 +237,21 @@ class UncoloredTrumpf(Mode):
         """
         are_last_player: bool = len(state.table) == 3
         round_color = self.card_counter.get_round_color(state)
-        cards_of_suit_remaining: List[Card] = flatten_matrix([x[1] for x in split_cards_by_suit(self.card_counter.unknown_cards()) if x[0] == round_color])
+        cards_of_suit_remaining: list[Card] = flatten_matrix(
+            [
+                x[1]
+                for x in split_cards_by_suit(self.card_counter.unknown_cards())
+                if x[0] == round_color
+            ]
+        )
         my_cards_of_suit = [x[1] for x in my_cards_by_suit if x[0] == round_color]
-        return all([are_last_player, not cards_of_suit_remaining, len(my_cards_of_suit) > 1])
+        return all(
+            [are_last_player, not cards_of_suit_remaining, len(my_cards_of_suit) > 1]
+        )
 
-
-    def should_win_stich_not_last_player(self, my_cards_by_suit: List[Tuple[Suit, List[Card]]], state: Status) -> bool:
+    def should_win_stich_not_last_player(
+        self, my_cards_by_suit: list[tuple[Suit, list[Card]]], state: Status
+    ) -> bool:
         """Determines if the player should try to win the stich when not the last player.
 
         This function checks if the player is not last to play, the last player has cards of the round color, only one card of the round color remains appart from own hand, and the player has more than one card of the round color.
@@ -220,11 +265,28 @@ class UncoloredTrumpf(Mode):
         """
         are_last_player: bool = len(state.table) == 3
         round_color = self.card_counter.get_round_color(state)
-        cards_of_suit_remaining: List[Card] = flatten_matrix([x[1] for x in split_cards_by_suit(self.card_counter.unknown_cards()) if x[0] == round_color])
+        cards_of_suit_remaining: list[Card] = flatten_matrix(
+            [
+                x[1]
+                for x in split_cards_by_suit(self.card_counter.unknown_cards())
+                if x[0] == round_color
+            ]
+        )
         my_cards_of_suit = [x[1] for x in my_cards_by_suit if x[0] == round_color]
-        last_player_has_cards_of_suit_remaining: bool = self.card_counter.has_suit_likelihood(self.card_counter.opponent_1_id, round_color, state) == 1
-        return all([not are_last_player, last_player_has_cards_of_suit_remaining, len(cards_of_suit_remaining) == 1, len(my_cards_of_suit) > 1])
-
+        last_player_has_cards_of_suit_remaining: bool = (
+            self.card_counter.has_suit_likelihood(
+                self.card_counter.opponent_1_id, round_color, state
+            )
+            == 1
+        )
+        return all(
+            [
+                not are_last_player,
+                last_player_has_cards_of_suit_remaining,
+                len(cards_of_suit_remaining) == 1,
+                len(my_cards_of_suit) > 1,
+            ]
+        )
 
     def should_win_stich_partner_not_leader(self, state: Status) -> bool:
         """Determines if the player should try to win the stich when the partner is not the round leader.
@@ -238,13 +300,27 @@ class UncoloredTrumpf(Mode):
             bool: True if the player should try to win the stich, False otherwise.
         """
         are_last_player: bool = len(state.table) == 3
-        partner_is_roundleader = self.card_counter.is_round_leader(self.card_counter.partner_id, state)
-        opponent_can_beat_partner = self.card_counter.has_cards_likelihood(self.card_counter.opponent_1_id, self.cards_beating_current_stich(self.card_counter.unknown_cards(), state), state) > 0
-        condition = partner_is_roundleader and (are_last_player or not opponent_can_beat_partner)
+        partner_is_roundleader = self.card_counter.is_round_leader(
+            self.card_counter.partner_id, state
+        )
+        opponent_can_beat_partner = (
+            self.card_counter.has_cards_likelihood(
+                self.card_counter.opponent_1_id,
+                self.cards_beating_current_stich(
+                    self.card_counter.unknown_cards(), state
+                ),
+                state,
+            )
+            > 0
+        )
+        condition = partner_is_roundleader and (
+            are_last_player or not opponent_can_beat_partner
+        )
         return not condition
 
-
-    def want_stich(self, my_cards_by_suit: List[Tuple[Suit, List[Card]]], state: Status) -> bool:
+    def want_stich(
+        self, my_cards_by_suit: list[tuple[Suit, list[Card]]], state: Status
+    ) -> bool:
         """Determines whether the player should attempt to win the current stich.
 
         This function evaluates the player's hand, the game state, and the likelihood of opponents holding key cards to decide if going for the stich is advantageous.
@@ -264,7 +340,6 @@ class UncoloredTrumpf(Mode):
             return True
         return self.should_win_stich_partner_not_leader(state)
 
-
     def unterzug(self, state: Status) -> Card | None:
         """Determines if an 'Unterzug' (special play) is possible and returns the card to play if so.
 
@@ -277,7 +352,7 @@ class UncoloredTrumpf(Mode):
             Card or None: The card to play for Unterzug, or None if Unterzug is not possible.
         """
         # Source: https://jassverzeichnis.ch/jassen-in-zahlen-richtiger-unterzug/
-   
+
         round_color = self.card_counter.get_round_color(state)
 
         # check if Partner won at least four rounds and we can make Matsch. Also, we need at least 2 remaining rounds for a proper unterzug.
@@ -288,47 +363,71 @@ class UncoloredTrumpf(Mode):
             return None
 
         # Match must be possible. Only partner must have had a stich.
-        opponent_1_had_stich = self.card_counter.get_had_stich_flags(self.card_counter.opponent_1_id)
-        opponent_2_had_stich = self.card_counter.get_had_stich_flags(self.card_counter.opponent_2_id)
+        opponent_1_had_stich = self.card_counter.get_had_stich_flags(
+            self.card_counter.opponent_1_id
+        )
+        opponent_2_had_stich = self.card_counter.get_had_stich_flags(
+            self.card_counter.opponent_2_id
+        )
         i_had_stich = self.card_counter.get_had_stich_flags(self.card_counter.me.id)
 
         if opponent_1_had_stich or opponent_2_had_stich or i_had_stich:
             return None
-        
+
         # check if opponent after us had Verworfen the suit on table.
-        verworfen_flag = self.card_counter.get_tossed_suits_flags(self.card_counter.opponent_1_id)
-        failed_to_serve_flag = self.card_counter.get_failed_to_serve_suits_flags(self.card_counter.opponent_1_id)
-        if round_color not in verworfen_flag[:2] or round_color not in failed_to_serve_flag:
+        verworfen_flag = self.card_counter.get_tossed_suits_flags(
+            self.card_counter.opponent_1_id
+        )
+        failed_to_serve_flag = self.card_counter.get_failed_to_serve_suits_flags(
+            self.card_counter.opponent_1_id
+        )
+        if (
+            round_color not in verworfen_flag[:2]
+            or round_color not in failed_to_serve_flag
+        ):
             return None
 
         # check if hand of self contains bock and 3rd bock of current suit.
         my_cards_by_suit = split_cards_by_suit(self.card_counter.get_hand())
-        cards_of_interest = self.card_counter.filter_suit_cards_from_tuple(my_cards_by_suit, round_color)
-        cards_remaining = self.card_counter.remaining_cards(self.card_counter.cards_played())
-        cards_remaining_in_suit = self.sort_by_rank([x for x in cards_remaining if x.suit == round_color])
+        cards_of_interest = self.card_counter.filter_suit_cards_from_tuple(
+            my_cards_by_suit, round_color
+        )
+        cards_remaining = self.card_counter.remaining_cards(
+            self.card_counter.cards_played()
+        )
+        cards_remaining_in_suit = self.sort_by_rank(
+            [x for x in cards_remaining if x.suit == round_color]
+        )
 
         # Must have at least two cards.
         if len(cards_remaining_in_suit) < 2:
             return None
 
-        have_strongest_card = cards_remaining_in_suit[0] in cards_of_interest # We must have strongest card.
-        have_second_strongest_card = cards_remaining_in_suit[1] in cards_of_interest # We must not have second strongest card, because else Unterzug does not make sense.
+        have_strongest_card = (
+            cards_remaining_in_suit[0] in cards_of_interest
+        )  # We must have strongest card.
+        have_second_strongest_card = (
+            cards_remaining_in_suit[1] in cards_of_interest
+        )  # We must not have second strongest card, because else Unterzug does not make sense.
         if not have_strongest_card or have_second_strongest_card:
             return None
 
         if self.card_counter.current_round() < 7:
-            remaining_rounds = max(3,9-self.card_counter.current_round())
+            remaining_rounds = max(3, 9 - self.card_counter.current_round())
             if remaining_rounds > len(cards_remaining_in_suit):
                 return None
-            for n in range(2,remaining_rounds): # Must have all remaining Bocks for Match.
+            for n in range(
+                2, remaining_rounds
+            ):  # Must have all remaining Bocks for Match.
                 if cards_remaining_in_suit[n] not in cards_of_interest:
                     return None
 
         # return card to play
-        return self.sort_by_rank([x[1] for x in my_cards_by_suit if x[0] == round_color][0])[1]
+        return self.sort_by_rank(
+            [x[1] for x in my_cards_by_suit if x[0] == round_color][0]
+        )[1]
 
-
-    def rate_initial_suit_strength(self, cards_of_same_suit: List[Card]) -> int:
+    def rate_initial_suit_strength(self, cards_of_same_suit: list[Card]) -> int:
         """Calculates the initial strength score for a suit based on the player's cards.
 
         This function evaluates the cards of a given suit and assigns a score based on their rank, rewarding consecutive high ranks and high cards.
@@ -341,8 +440,9 @@ class UncoloredTrumpf(Mode):
         """
         raise NotImplementedError
 
-
-    def are_missing_second_strongest_card(self, available_cards: List[Card]) -> Card | None:
+    def are_missing_second_strongest_card(
+        self, available_cards: list[Card]
+    ) -> Card | None:
         """Finds a suit where the player has the strongest and third strongest cards but is missing the second strongest.
 
         This function searches through the available cards to identify the strongest suit where the player holds the first and third strongest cards, but not the second, and returns the strongest card of that suit if found.
@@ -354,7 +454,9 @@ class UncoloredTrumpf(Mode):
             Card or None: The strongest card of the identified suit, or None if no such suit is found.
         """
         candidates: dict[Card, int] = {}
-        for suit, suit_cards in sorted(split_cards_by_suit(available_cards),key=len, reverse=True):
+        for suit, suit_cards in sorted(
+            split_cards_by_suit(available_cards), key=len, reverse=True
+        ):
             suit_sorted = self.sort_by_rank(suit_cards)
             # Check if we have sufficient cards of suit. # TODO: tweak value. Min. number of cards required is chosen with educated guess.
             if len(suit_sorted) < 3:
@@ -367,8 +469,7 @@ class UncoloredTrumpf(Mode):
 
         return max(candidates, key=candidates.get) if candidates else None
 
-
-    def evaluate_suit_strengths(self, available_cards) -> Dict[Suit, int]:
+    def evaluate_suit_strengths(self, available_cards) -> dict[Suit, int]:
         """Evaluates and ranks the strength of each suit in the available cards.
 
         This function calculates a strength score for each suit based on the player's cards and returns a dictionary of suits sorted by strength in descending order.
@@ -380,17 +481,19 @@ class UncoloredTrumpf(Mode):
             Dict[Suit, int]: A dictionary mapping each suit to its calculated strength score, sorted by strength descending.
         """
         # Get strongest card of each suit as a dictionary key and score this card by suit strength.
-        strength_of_suits: Dict[Suit, int] = {}
+        strength_of_suits: dict[Suit, int] = {}
         cards_by_suit = split_cards_by_suit(available_cards)
         for suit, suit_cards in cards_by_suit:
             strength_of_suits[suit] = self.rate_initial_suit_strength(suit_cards)
 
         # Sort the dictionary based on decreasing suit strength.
-        return dict(sorted(strength_of_suits.items(), key=lambda item: item[1], reverse=True))
+        return dict(
+            sorted(strength_of_suits.items(), key=lambda item: item[1], reverse=True)
+        )
 
-
-
-    def get_best_card_of_strongest_suit_to_play_first_player(self, available_cards: List[Card]) -> Card | None:
+    def get_best_card_of_strongest_suit_to_play_first_player(
+        self, available_cards: list[Card]
+    ) -> Card | None:
         """Selects the best card of the strongest suit to play as the first player.
 
         This function evaluates each suit in the available cards, scores them for strength, and returns the strongest card of the strongest suit, avoiding suits where only one card is held.
@@ -416,9 +519,8 @@ class UncoloredTrumpf(Mode):
             if self.is_bock(card) and not is_blutt_bock:
                 return card
         return None
-    
 
-    def play_lowest_card_of_strongest_suit(self, available_cards: List[Card]) -> Card:
+    def play_lowest_card_of_strongest_suit(self, available_cards: list[Card]) -> Card:
         """Plays the lowest card of the strongest suit from the available cards.
 
         This function determines the strongest suit based on suit strength evaluation and returns the lowest-ranked card from that suit.
@@ -439,16 +541,20 @@ class UncoloredTrumpf(Mode):
             weakest_card = cards_of_strongest_suit[-1]
             # return weakest card, unless weakest card is banner. return second weakest instead
             # exception: second weakest card is Bock.
-            if len(cards_of_strongest_suit) >= 2 and weakest_card.value == 10 and not self.is_bock(cards_of_strongest_suit[-2]):
+            if (
+                len(cards_of_strongest_suit) >= 2
+                and weakest_card.value == 10
+                and not self.is_bock(cards_of_strongest_suit[-2])
+            ):
                 return cards_of_strongest_suit[-2]
 
         # We have no other option than to play banner.
         suit = next(iter(suits_by_strength))
         return cards_by_suit[suit][-1]
 
-
-
-    def get_card_to_play_first_player_trumpfrole_first_round(self, available_cards: List[Card]) -> Card | None:
+    def get_card_to_play_first_player_trumpfrole_first_round(
+        self, available_cards: list[Card]
+    ) -> Card | None:
         """Determines the best card to play as the first player in the first round in trumpf role.
 
         This function selects a card to play based on suit length and card strength, prioritizing suits where the second strongest card is missing, then the strongest suit, and finally the lowest card of the strongest suit.
@@ -463,14 +569,16 @@ class UncoloredTrumpf(Mode):
         card: Card | None = self.are_missing_second_strongest_card(available_cards)
         if card is not None:
             return card
-        
+
         # Play strong suit where we have best and second best card.
         # Do not play blutt bock of a suit!
         # Do not play bock of suit where we do not have third best card and a lot of cards!
-        card = self.get_best_card_of_strongest_suit_to_play_first_player(available_cards)
+        card = self.get_best_card_of_strongest_suit_to_play_first_player(
+            available_cards
+        )
         if card is not None:
             return card
-        
+
         # We made Vorhand trumpf. We must play our bocks.
         if bocks := list(filter(lambda x: self.is_bock(x), available_cards)):
             return bocks[0]
@@ -478,12 +586,14 @@ class UncoloredTrumpf(Mode):
         # No bock: play lowest card of strongest suit
         return self.play_lowest_card_of_strongest_suit(available_cards)
 
-
-    def signal_passing_card(self, bocks: List[Card], cards_by_suit: Dict[Suit, List[Card]], state: Status) -> Card | None:
+    def signal_passing_card(
+        self, bocks: list[Card], cards_by_suit: dict[Suit, list[Card]], state: Status
+    ) -> Card | None:
         raise NotImplementedError
 
-
-    def get_card_to_play_first_player_not_first_round(self, available_cards: List[Card], state: Status) -> Card | None:
+    def get_card_to_play_first_player_not_first_round(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Selects the optimal card to play as the first player in non-initial rounds.
 
         This function determines which card to play based on the current round, available bocks, suit flags, and the partner's status, aiming to maximize team advantage and signal intentions.
@@ -496,7 +606,9 @@ class UncoloredTrumpf(Mode):
             Card or None: The selected card to play, or None if no suitable card is found.
         """
         cards_by_suit = split_cards_by_suit(available_cards)
-        suit_angezogen_flags = self.card_counter.get_angezogen_flags(self.card_counter.me.id)
+        suit_angezogen_flags = self.card_counter.get_angezogen_flags(
+            self.card_counter.me.id
+        )
         bocks = list(filter(lambda x: self.is_bock(x), available_cards))
 
         # We play our Wall of Cards but stop for a moment to signal our partner which card to hold.
@@ -511,7 +623,7 @@ class UncoloredTrumpf(Mode):
         for bock in bocks:
             if bock.suit in suit_angezogen_flags:
                 return bock
-            
+
         # We played all bocks of angezogen flags. Play remaining bocks.
         if bocks:
             return bocks[0]
@@ -519,12 +631,13 @@ class UncoloredTrumpf(Mode):
         # We played all our bocks. Hand over to partner.
         if not self.card_counter.had_stich_previously(self.card_counter.partner_id):
             return self.get_passing_card(cards_by_suit, state)
-        
+
         # We cannot hand over to partner. Play best possible card in this situation.
         return self.get_value_card(cards_by_suit, state)
 
-
-    def get_card_to_play_first_player_partnerrole(self, available_cards: List[Card]) -> Card | None:
+    def get_card_to_play_first_player_partnerrole(
+        self, available_cards: list[Card]
+    ) -> Card | None:
         """Determines the best card to play as the first player in the partner role.
 
         This function selects a card to play based on suit length and card strength, prioritizing suits where the second strongest card is missing, then the strongest suit, and finally the lowest card of the strongest suit.
@@ -540,19 +653,22 @@ class UncoloredTrumpf(Mode):
         card: Card | None = self.are_missing_second_strongest_card(available_cards)
         if card is not None:
             return card
-        
+
         # Play strong suit where we have best and second best card.
         # Do not play blutt bock of a suit!
         # Do not play bock of suit where we do not have third best card and a lot of cards!
-        card = self.get_best_card_of_strongest_suit_to_play_first_player(available_cards)
+        card = self.get_best_card_of_strongest_suit_to_play_first_player(
+            available_cards
+        )
         if card is not None:
             return card
 
         # No bock: play lowest card of strongest suit
         return self.play_lowest_card_of_strongest_suit(available_cards)
 
-
-    def get_card_to_play_first_player(self, available_cards: List[Card], state: Status, role: str) -> Card | None:
+    def get_card_to_play_first_player(
+        self, available_cards: list[Card], state: Status, role: str
+    ) -> Card | None:
         """Determines the best card to play as the first player based on the round and player role.
 
         This function selects the optimal card to play as the first player, considering whether it is the first round and the player's role (Trumpf or Partner), and delegates to the appropriate strategy.
@@ -567,19 +683,25 @@ class UncoloredTrumpf(Mode):
         """
         is_first_round = not self.card_counter.current_round()
 
-        if role == 'Trumpf' and is_first_round:
-            return self.get_card_to_play_first_player_trumpfrole_first_round(available_cards)
+        if role == "Trumpf" and is_first_round:
+            return self.get_card_to_play_first_player_trumpfrole_first_round(
+                available_cards
+            )
 
-        elif role == 'Partner' and is_first_round:
+        elif role == "Partner" and is_first_round:
             return self.get_card_to_play_first_player_partnerrole(available_cards)
 
-        
-        elif role in {'Off', 'Trumpf', 'Partner'}:
-            return self.get_card_to_play_first_player_not_first_round(available_cards, state)
-        raise ValueError(f'Role is expected to be Trumpf, Partner, or Off. However, {role=}.')
+        elif role in {"Off", "Trumpf", "Partner"}:
+            return self.get_card_to_play_first_player_not_first_round(
+                available_cards, state
+            )
+        raise ValueError(
+            f"Role is expected to be Trumpf, Partner, or Off. However, {role=}."
+        )
 
-
-    def get_stich_card_or_tossable(self, available_cards: List[Card], state: Status) -> Card | None:
+    def get_stich_card_or_tossable(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Returns a stich card if available, otherwise returns a tossable card.
 
         This function attempts to select a card that can win the stich; if no such card is found, it returns a card that can be safely tossed.
@@ -597,8 +719,9 @@ class UncoloredTrumpf(Mode):
             return self.get_tossable_card(available_cards, state)
         return stich_card
 
-
-    def play_second_strongest_card_if_in_hand(self, available_cards: List[Card], state: Status) -> Card |None:
+    def play_second_strongest_card_if_in_hand(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Checks if the partner is requesting the second strongest card of a suit.
 
         This function determines if the partner's play indicates a request for the second strongest card in the current suit, and returns it if available.
@@ -615,12 +738,13 @@ class UncoloredTrumpf(Mode):
         # If we do not have suit in hand, return None
         if cards_of_suit is None:
             return None
-        
+
         # return second strongest card if in hand, else return None
         return next((card for card in cards_of_suit if self.is_nth_nut(1, card)), None)
 
-
-    def partner_looks_for_second_strongest_card(self, available_cards: List[Card], state: Status) -> Card |None:
+    def partner_looks_for_second_strongest_card(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Checks if the partner is looking for the second strongest card in the first round.
 
         This function determines if it is the first round and the partner played a bock, and if so, returns the second strongest card if it is in hand.
@@ -641,8 +765,9 @@ class UncoloredTrumpf(Mode):
             card = self.play_second_strongest_card_if_in_hand(available_cards, state)
         return card
 
-
-    def get_card_to_play_third_player_trumpf(self, available_cards: List[Card], state: Status) -> Card | None:
+    def get_card_to_play_third_player_trumpf(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Determines the best card to play as the third player in the trumpf role.
 
         This function selects a card based on whether it is the first round and the partner's play, or otherwise evaluates the player's stich history and desire to win the stich to choose between stich-winning or tossable cards.
@@ -666,9 +791,10 @@ class UncoloredTrumpf(Mode):
         if not self.want_stich(cards_by_suit, state):
             return self.get_tossable_card(available_cards, state)
         return self.get_stich_card_or_tossable(available_cards, state)
-    
 
-    def get_card_to_play_third_player_partner(self, available_cards: List[Card], state: Status) -> Card | None:
+    def get_card_to_play_third_player_partner(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Determines the best card to play as the third player in the partner role.
 
         This function first checks if the partner is asking for the second strongest card, then if an Unterzug is possible, and otherwise decides between tossing a card or attempting to win the stich based on the game state.
@@ -695,9 +821,10 @@ class UncoloredTrumpf(Mode):
         if not self.want_stich(cards_by_suit, state):
             return self.get_tossable_card(available_cards, state)
         return self.get_stich_card_or_tossable(available_cards, state)
-    
 
-    def get_card_to_play_third_player(self, available_cards: List[Card], state: Status, role: str) -> None | Card:
+    def get_card_to_play_third_player(
+        self, available_cards: list[Card], state: Status, role: str
+    ) -> None | Card:
         """Determines the best card to play as the third player based on the player's role.
 
         This function selects the optimal card to play as the third player, delegating to the appropriate strategy for the player's role (Trumpf, Partner, or Off), and considers whether to attempt to win the stich or toss a card.
@@ -710,21 +837,24 @@ class UncoloredTrumpf(Mode):
         Returns:
             Card or None: The selected card to play, or None if no suitable card is found.
         """
-        if role not in {'Trumpf', 'Partner', 'Off'}:
-            raise ValueError(f'Role is expected to be Trumpf, Partner, or Off. However, {role=}.')
+        if role not in {"Trumpf", "Partner", "Off"}:
+            raise ValueError(
+                f"Role is expected to be Trumpf, Partner, or Off. However, {role=}."
+            )
         cards_by_suit = split_cards_by_suit(available_cards)
-        if role == 'Trumpf':
+        if role == "Trumpf":
             return self.get_card_to_play_third_player_trumpf(available_cards, state)
 
-        elif role == 'Partner':
+        elif role == "Partner":
             return self.get_card_to_play_third_player_partner(available_cards, state)
-        
-        elif role == 'Off' and self.want_stich(cards_by_suit, state):
+
+        elif role == "Off" and self.want_stich(cards_by_suit, state):
             return self.get_stich_card_or_tossable(available_cards, state)
         return self.get_tossable_card(available_cards, state)
-        
 
-    def get_card_to_play(self, available_cards: List[Card], state: Status, role: str) -> None | Card:
+    def get_card_to_play(
+        self, available_cards: list[Card], state: Status, role: str
+    ) -> None | Card:
         """Determines the optimal card to play based on the player's position and role.
 
         This function selects the best card to play by evaluating the player's position in the round, the current game state, and the player's role, delegating to specialized strategies for each scenario.
@@ -742,18 +872,17 @@ class UncoloredTrumpf(Mode):
 
         if current_position == 0:
             return self.get_card_to_play_first_player(available_cards, state, role)
-            
+
         elif current_position == 1:
             return self.get_stich_card_or_tossable(available_cards, state)
-        
+
         elif current_position == 2:
             return self.get_card_to_play_third_player(available_cards, state, role)
 
         elif current_position == 3 and self.want_stich(cards_by_suit, state):
             return self.get_stich_card_or_tossable(available_cards, state)
-        
+
         return self.get_tossable_card(available_cards, state)
-    
 
     def remove_all_bockcards_flagupdate(self, card: Card, player_id: int) -> None:
         """Updates flags to indicate that a player has no bock cards of any suit.
@@ -768,14 +897,15 @@ class UncoloredTrumpf(Mode):
             None
         """
         if self.is_bock(card):
-            return None
+            return
 
         for suit in Suit:
             self.add_flag(DoesntHaveCardFlag(self.get_current_bock(suit)), player_id)
-        return None
+        return
 
-
-    def update_partner_first_player_flag_first_round(self, card: Card, state: Status) -> None:
+    def update_partner_first_player_flag_first_round(
+        self, card: Card, state: Status
+    ) -> None:
         """Updates partner-related flags for the first round when the partner opens the stich.
 
         This function adjusts bock-related flags for the partner based on whether the game was geschoben and which card the partner played to open the first round.
@@ -789,8 +919,6 @@ class UncoloredTrumpf(Mode):
         """
         if not state.geschoben:
             self.remove_all_bockcards_flagupdate(card, self.card_counter.partner_id)
-        return None
-
 
     def update_partner_first_player_flag(self, card: Card, state: Status) -> None:
         """Updates partner-related inference flags when the partner leads a stich.
@@ -812,10 +940,10 @@ class UncoloredTrumpf(Mode):
         # Partner opens with non-bock card
         else:
             self.remove_all_bockcards_flagupdate(card, self.card_counter.partner_id)
-        return None
 
-
-    def update_first_player_flags(self,player_id: int, card: Card, state: Status) -> None:
+    def update_first_player_flags(
+        self, player_id: int, card: Card, state: Status
+    ) -> None:
         """Updates inference flags after the leading player has played a card.
 
         This function records suit-strength information for the leader, updates partner or opponent-specific bock flags based on who led and the round number, and tracks whether the player has previously won a stich.
@@ -833,7 +961,7 @@ class UncoloredTrumpf(Mode):
         # Partner is first player. Update his flags.
         if player_id == self.card_counter.partner_id:
             self.update_partner_first_player_flag(card, state)
-        
+
         # Opponent is first player. Update his flags.
         opponent_1_id = self.card_counter.opponent_1_id
         opponent_2_id = self.card_counter.opponent_2_id
@@ -842,19 +970,26 @@ class UncoloredTrumpf(Mode):
             self.remove_all_bockcards_flagupdate(card, player_id)
 
         # Add a flag because the player won the previous stich.
-        player_has_won_stich_previously: bool = self.card_counter.had_stich_previously(player_id)
+        player_has_won_stich_previously: bool = self.card_counter.had_stich_previously(
+            player_id
+        )
         is_geschoben: bool = state.geschoben
         suit_is_trumpf: bool = self.is_suit_trumpf()
 
         # TODO: Not sure why is_geschoben is here. Is also included in challenge player.
-        condition = not (is_first_round and is_geschoben and suit_is_trumpf and player_has_won_stich_previously)
+        condition = not (
+            is_first_round
+            and is_geschoben
+            and suit_is_trumpf
+            and player_has_won_stich_previously
+        )
 
         if condition:
             self.add_flag(PreviouslyHadStichFlag(), player_id)
-        return None
-    
 
-    def update_non_first_player_flags(self, player_id: int, card: Card, state: Status) -> None:
+    def update_non_first_player_flags(
+        self, player_id: int, card: Card, state: Status
+    ) -> None:
         """Updates inference flags for a non-leading player based on the card they played.
 
         This function records when a player fails to follow the round color, marking the led suit as failed to serve and the played suit as discarded for that player.
@@ -873,8 +1008,6 @@ class UncoloredTrumpf(Mode):
         if card.suit != round_color:
             self.add_flag(FailedToServeSuitFlag(round_color), player_id)
             self.add_flag(SuitVerworfenFlag(card.suit), player_id)
-        return None
-    
 
     def update_flags(self, player_id: int, card: Card, state: Status) -> None:
         """Updates player flags based on the card played and the current game state.

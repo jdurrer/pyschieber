@@ -63,12 +63,11 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
         os: [ubuntu-latest]
-        # Uncomment to also test on macOS/Windows:
-        # include:
-        #   - python-version: "3.12"
-        #     os: macos-latest
-        #   - python-version: "3.12"
-        #     os: windows-latest
+        include:
+          - python-version: "3.12"
+            os: macos-latest
+          - python-version: "3.12"
+            os: windows-latest
 
     steps:
       - name: Checkout code
@@ -90,7 +89,7 @@ jobs:
         run: pip install -e .
 
       - name: Run tests with coverage
-        run: pytest --cov=. --cov-report=xml --cov-report=term
+        run: py -m pytest --cov=. --cov-branch --cov-report=xml --cov-report=term --junitxml=test-results.xml
 
       # Upload coverage to Codecov (free for open-source)
       # Sign up at codecov.io and add your token as a repo secret
@@ -100,6 +99,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
           verbose: true
+          file: ./junit.xml
 
   # ─────────────────────────────────────────────
   # JOB 3: Security scanning

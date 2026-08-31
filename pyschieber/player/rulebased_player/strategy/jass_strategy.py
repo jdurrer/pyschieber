@@ -1,27 +1,32 @@
 # Type Annotation
-from pyschieber.trumpf import Trumpf
+from typing import Literal
+
 from pyschieber.card import Card
-from pyschieber.suit import Suit
-from typing import List, Tuple, Literal
 from pyschieber.player.base_player import BasePlayer
+from pyschieber.player.rulebased_player.helpers.state_dict_to_dataclass import (
+    Status,
+    StatusDict,
+    translate_get_status_to_dataclass,
+)
+from pyschieber.player.rulebased_player.strategy.card_counter import CardCounter
+from pyschieber.player.rulebased_player.strategy.mode.bottom_up_mode import BottomUpMode
 
 # Code
-from pyschieber.player.treePlayer.strategy.mode.mode import Mode
-from pyschieber.player.treePlayer.strategy.mode.trumpf_color_mode import TrumpfColorMode
-from pyschieber.player.treePlayer.strategy.mode.top_down_mode import TopDownMode
-from pyschieber.player.treePlayer.strategy.mode.bottom_up_mode import BottomUpMode
-from pyschieber.player.treePlayer.strategy.card_counter import CardCounter
-from pyschieber.player.treePlayer.helpers.state_dict_to_dataclass import translate_get_status_to_dataclass, StatusDict, Status
+from pyschieber.player.rulebased_player.strategy.mode.mode import Mode
+from pyschieber.player.rulebased_player.strategy.mode.top_down_mode import TopDownMode
+from pyschieber.player.rulebased_player.strategy.mode.trumpf_color_mode import (
+    TrumpfColorMode,
+)
+from pyschieber.suit import Suit
+from pyschieber.trumpf import Trumpf
 
 
 class JassStrategy:
-
     def __init__(self, player: BasePlayer) -> None:
         self.player = player
         self.card_counter: CardCounter = CardCounter(player)
 
-
-    def chose_trumpf(self, cards: List[Card], geschoben: bool) -> str:
+    def chose_trumpf(self, cards: list[Card], geschoben: bool) -> str:
         """Choose best possible suit to make trumpf.
 
         Args:
@@ -31,29 +36,42 @@ class JassStrategy:
         Returns:
             Trumpf: chosen Trumpf
         """
-        scores: List[Tuple[str, int]] = []
+        scores: list[tuple[str, int]] = []
 
         if not geschoben:
             scores.append((Trumpf.SCHIEBEN, 54))
 
         topdownmode = TopDownMode(self.card_counter)
-        scores.append((Trumpf.OBE_ABE, topdownmode.calculate_mode_score(cards, geschoben)))
+        scores.append(
+            (Trumpf.OBE_ABE, topdownmode.calculate_mode_score(cards, geschoben))
+        )
 
         bottomupmode = BottomUpMode(self.card_counter)
-        scores.append((Trumpf.UNDE_UFE, bottomupmode.calculate_mode_score(cards, geschoben)))
+        scores.append(
+            (Trumpf.UNDE_UFE, bottomupmode.calculate_mode_score(cards, geschoben))
+        )
 
         for suit in Suit:
             trumpfcolormode = TrumpfColorMode(suit, self.card_counter)
-            scores.append((Trumpf[suit.name], trumpfcolormode.calculate_mode_score(cards, geschoben)))
+            scores.append(
+                (
+                    Trumpf[suit.name],
+                    trumpfcolormode.calculate_mode_score(cards, geschoben),
+                )
+            )
 
         return max(scores, key=lambda x: x[1])[0]
-    
 
-    def get_mode(self, trumpf: Literal['ROSE', 'BELL', 'ACORN', 'SHIELD', 'OBE_ABE', 'UNDE_UFE', 'SCHIEBEN']) -> TopDownMode | BottomUpMode | TrumpfColorMode:
+    def get_mode(
+        self,
+        trumpf: Literal[
+            "ROSE", "BELL", "ACORN", "SHIELD", "OBE_ABE", "UNDE_UFE", "SCHIEBEN"
+        ],
+    ) -> TopDownMode | BottomUpMode | TrumpfColorMode:
         """Returns the mode strategy object corresponding to the given trumpf.
 
         This function maps the trumpf value to its respective mode strategy class instance.
-        
+
         Args:
             trumpf: The trumpf value indicating the current game mode.
 
@@ -61,16 +79,15 @@ class JassStrategy:
             An instance of the mode strategy class corresponding to the trumpf.
         """
         return {
-            'OBE_ABE': TopDownMode(self.card_counter),
-            'UNDE_UFE': BottomUpMode(self.card_counter),
-            'ROSE': TrumpfColorMode(Suit['ROSE'], self.card_counter),
-            'BELL': TrumpfColorMode(Suit['BELL'], self.card_counter),
-            'ACORN': TrumpfColorMode(Suit['ACORN'], self.card_counter),
-            'SHIELD': TrumpfColorMode(Suit['SHIELD'], self.card_counter),
+            "OBE_ABE": TopDownMode(self.card_counter),
+            "UNDE_UFE": BottomUpMode(self.card_counter),
+            "ROSE": TrumpfColorMode(Suit["ROSE"], self.card_counter),
+            "BELL": TrumpfColorMode(Suit["BELL"], self.card_counter),
+            "ACORN": TrumpfColorMode(Suit["ACORN"], self.card_counter),
+            "SHIELD": TrumpfColorMode(Suit["SHIELD"], self.card_counter),
         }[trumpf]
 
-
-    def choose_card(self, allowed_cards: List[Card], state: StatusDict) -> Card:
+    def choose_card(self, allowed_cards: list[Card], state: StatusDict) -> Card:
         """Choose a card to be played
 
         Args:
@@ -85,10 +102,9 @@ class JassStrategy:
 
         if len(allowed_cards) == 1:
             return allowed_cards[0]
-        
+
         mode: Mode = self.get_mode(status.trumpf)
         return mode.get_card_to_play(allowed_cards, status, self.player.role)
-
 
     def move_made(self, player_id: int, card: Card, status: Status) -> None:
         """Keeps track of who did what (Players and played Cards).
@@ -103,8 +119,8 @@ class JassStrategy:
 
 
 def main() -> None:
-    print('This File cannot run on its own.')
+    print("This File cannot run on its own.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

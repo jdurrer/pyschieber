@@ -4,8 +4,8 @@ from pyschieber.tournament import Tournament
 
 
 def run_statistics(players):
-    point_limit = 1000
-    number_of_tournaments = 1000
+    point_limit = 100
+    number_of_tournaments = 10
 
     tournament = Tournament(point_limit=point_limit)
     [tournament.register_player(player=player) for player in players]

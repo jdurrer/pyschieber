@@ -1,13 +1,13 @@
-import jsonpickle
-import logging
 import asyncio
+import logging
 from multiprocessing import Condition
 from threading import Thread
 
+import jsonpickle
 import websockets
 
-from schieber.player.base_player import BasePlayer
-from schieber.trumpf import Trumpf
+from pyschieber.player.base_player import BasePlayer
+from pyschieber.trumpf import Trumpf
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class ExternalPlayer(BasePlayer):
         rl methods which are already implemented (openai baselines: https://github.com/openai/baselines).
     """
 
-    def __init__(self, name='unknown', seed=None, hostname='localhost', port='8765'):
+    def __init__(self, name="unknown", seed=None, hostname="localhost", port="8765"):
         super().__init__(name, seed)
         self.action_received = Condition()
         self.observation_received = Condition()
@@ -46,7 +46,9 @@ class ExternalPlayer(BasePlayer):
         asyncio.set_event_loop(event_loop)
         # use this in case you want to supply the method with parameters
         # bound_handler = functools.partial(self.receive_action_and_send_observation)
-        start_server = websockets.serve(self.receive_action_and_send_observation, self.hostname, self.port)
+        start_server = websockets.serve(
+            self.receive_action_and_send_observation, self.hostname, self.port
+        )
         event_loop.run_until_complete(start_server)
         event_loop.run_forever()
 
@@ -97,7 +99,9 @@ class ExternalPlayer(BasePlayer):
                 if allowed:
                     yield None
             else:
-                logger.error("Please choose a valid card! Choosing the first allowed card now.")
+                logger.error(
+                    "Please choose a valid card! Choosing the first allowed card now."
+                )
                 allowed = yield allowed_cards[0]
                 if allowed:
                     yield None

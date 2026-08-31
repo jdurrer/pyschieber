@@ -1,21 +1,32 @@
-from pyschieber.player.treePlayer.strategy.mode.mode import Mode
-from pyschieber.player.treePlayer.strategy.card_counter import CardCounter
-from pyschieber.helpers.game_helper import split_card_values_by_suit, split_cards_by_suit
-from pyschieber.trumpf import Trumpf
-from pyschieber.suit import Suit
-from pyschieber.card import from_string_to_card, Card
-from typing import List, Tuple, Dict
-from pyschieber.player.treePlayer.strategy.flags.flags import DoesntHaveCardFlag, PreviouslyHadStichFlag, FailedToServeSuitFlag, SuitAngezogenFlag, SuitVerworfenFlag, NumberOfTrumpfFlag
-from pyschieber.player.treePlayer.helpers.state_dict_to_dataclass import Status
-from pyschieber.player.treePlayer.helpers.helperfunctions import flatten_matrix, is_empty_or_none
 from copy import deepcopy
+
+from pyschieber.card import Card, from_string_to_card
+from pyschieber.helpers.game_helper import (
+    split_card_values_by_suit,
+    split_cards_by_suit,
+)
+from pyschieber.player.rulebased_player.helpers.helperfunctions import (
+    flatten_matrix,
+    is_empty_or_none,
+)
+from pyschieber.player.rulebased_player.helpers.state_dict_to_dataclass import Status
+from pyschieber.player.rulebased_player.strategy.card_counter import CardCounter
+from pyschieber.player.rulebased_player.strategy.flags.flags import (
+    DoesntHaveCardFlag,
+    FailedToServeSuitFlag,
+    NumberOfTrumpfFlag,
+    SuitAngezogenFlag,
+    SuitVerworfenFlag,
+)
+from pyschieber.player.rulebased_player.strategy.mode.mode import Mode
+from pyschieber.suit import Suit
+from pyschieber.trumpf import Trumpf
 
 
 class TrumpfColorMode(Mode):
     def __init__(self, suit: Suit, card_counter: CardCounter) -> None:
         self.suit = suit
         self.card_counter = card_counter
-
 
     def trumpf_name(self) -> Trumpf:
         """Returns the trumpf name for the current suit.
@@ -27,8 +38,7 @@ class TrumpfColorMode(Mode):
         """
         return Trumpf[self.suit.name]
 
-
-    def calculate_mode_score(self, cards: List[Card], geschoben: bool) -> int:
+    def calculate_mode_score(self, cards: list[Card], geschoben: bool) -> int:
         """Calculates a score for the given hand to evaluate its suitability for this trumpf color.
 
         This function scores the hand by rewarding high-value trumpf cards and consecutive high cards in other suits, indicating how well the hand fits the trumpf color strategy.
@@ -65,7 +75,6 @@ class TrumpfColorMode(Mode):
                     best_remaining_rank -= 1
                     score += 4
         return score
-    
 
     def get_current_bock(self, suit: Suit) -> None | Card:
         """Returns the current strongest card ("bock") of the given suit.
@@ -82,7 +91,7 @@ class TrumpfColorMode(Mode):
         # Check if a new function needs to be written to include this or if this function can be expanded. Where is this function used?
         # Info: This function was incorrect in challenge player. the sorted() function missed the reverse=True statement.
         # This function was moved here from mode.py.
-        remaining: List[Card] = []
+        remaining: list[Card] = []
         remaining.extend(self.card_counter.remaining_by_suit(suit))
         for suit_cards in split_cards_by_suit(self.card_counter.get_hand()):
             if suit_cards[0] == suit:
@@ -93,11 +102,12 @@ class TrumpfColorMode(Mode):
             return None
 
         trumpf = self.trumpf_name()
-        remaining_sorted = sorted(remaining, key=lambda card: card.get_score(trumpf), reverse=True)
+        remaining_sorted = sorted(
+            remaining, key=lambda card: card.get_score(trumpf), reverse=True
+        )
         return remaining_sorted[0]
 
-
-    def stronger_cards_remaining(self, card: Card) -> List[Card]:
+    def stronger_cards_remaining(self, card: Card) -> list[Card]:
         """Returns a list of stronger cards of the same suit that are not yet dead.
 
         This function identifies all cards of the same suit as the given card that are still in play and have a higher rank, considering trumpf rules if applicable.
@@ -108,21 +118,32 @@ class TrumpfColorMode(Mode):
         Returns:
             List[Card]: A list of stronger cards of the same suit that are not dead.
         """
-        stronger_cards: List[Card] = []
+        stronger_cards: list[Card] = []
 
         if card.suit == self.suit:
-            stronger_cards.extend(self.card_counter.filter_not_dead_cards_of_same_suit(card, lambda x: x.get_trumpf_rank() > card.get_trumpf_rank()))
+            stronger_cards.extend(
+                self.card_counter.filter_not_dead_cards_of_same_suit(
+                    card, lambda x: x.get_trumpf_rank() > card.get_trumpf_rank()
+                )
+            )
         else:
-            remaining_cards = self.card_counter.remaining_cards(self.card_counter.dead_cards())
-            remaining_cards_by_suit: Dict[Suit, List[Card]] = dict(split_cards_by_suit(remaining_cards))
+            remaining_cards = self.card_counter.remaining_cards(
+                self.card_counter.dead_cards()
+            )
+            remaining_cards_by_suit: dict[Suit, list[Card]] = dict(
+                split_cards_by_suit(remaining_cards)
+            )
             suit_cards = remaining_cards_by_suit.get(self.suit)
             if suit_cards is not None:
                 stronger_cards.extend(suit_cards)
-            stronger_cards.extend(self.card_counter.filter_not_dead_cards_of_same_suit(card, lambda x: x.value > card.value))
+            stronger_cards.extend(
+                self.card_counter.filter_not_dead_cards_of_same_suit(
+                    card, lambda x: x.value > card.value
+                )
+            )
         return stronger_cards
 
-
-    def stronger_cards_unknown(self, card: Card) -> List[Card]:
+    def stronger_cards_unknown(self, card: Card) -> list[Card]:
         """Returns a list of stronger cards of the same suit that are still unknown.
 
         This function identifies all cards of the same suit as the given card that have a higher rank and are not yet revealed or played, considering trumpf rules if applicable.
@@ -133,18 +154,27 @@ class TrumpfColorMode(Mode):
         Returns:
             List[Card]: A list of stronger cards of the same suit that are still unknown.
         """
-        stronger_cards: List[Card] = []
+        stronger_cards: list[Card] = []
 
         if card.suit == self.suit:
-            stronger_cards.extend(self.card_counter.filter_cards_of_same_suit(card, lambda x: x.get_trumpf_rank() > card.get_trumpf_rank()))
+            stronger_cards.extend(
+                self.card_counter.filter_cards_of_same_suit(
+                    card, lambda x: x.get_trumpf_rank() > card.get_trumpf_rank()
+                )
+            )
         else:
-            unknown_cards_by_suit: Dict[Suit, List[Card]] = dict(split_cards_by_suit(self.card_counter.unknown_cards()))
+            unknown_cards_by_suit: dict[Suit, list[Card]] = dict(
+                split_cards_by_suit(self.card_counter.unknown_cards())
+            )
             suit_cards = unknown_cards_by_suit.get(self.suit)
             if suit_cards is not None:
                 stronger_cards.extend(suit_cards)
-            stronger_cards.extend(self.card_counter.filter_cards_of_same_suit(card, lambda x: x.value > card.value))
+            stronger_cards.extend(
+                self.card_counter.filter_cards_of_same_suit(
+                    card, lambda x: x.value > card.value
+                )
+            )
         return stronger_cards
-
 
     def is_non_trumpf_bock(self, card: Card) -> bool:
         """Checks if the given card is the highest remaining card of its suit, excluding trumpf.
@@ -157,10 +187,16 @@ class TrumpfColorMode(Mode):
         Returns:
             bool: True if the card is the highest remaining non-trumpf card, False otherwise.
         """
-        return len(self.card_counter.filter_not_dead_cards_of_same_suit(card, lambda x: x.value > card.value)) == 0
+        return (
+            len(
+                self.card_counter.filter_not_dead_cards_of_same_suit(
+                    card, lambda x: x.value > card.value
+                )
+            )
+            == 0
+        )
 
-
-    def get_non_trumpf_bocks(self, available_cards: List[Card]) -> List[Card]:
+    def get_non_trumpf_bocks(self, available_cards: list[Card]) -> list[Card]:
         """Returns all non-trumpf cards in the hand that are currently bocks.
 
         This function filters the given cards to find those that are the highest remaining card of their suit while not belonging to the trumpf suit.
@@ -179,8 +215,9 @@ class TrumpfColorMode(Mode):
         )
         return non_trumpf_bocks
 
-
-    def get_passing_card(self, cards_by_suit: List[Tuple[Suit, List[Card]]], state: Status) -> Card | None:
+    def get_passing_card(
+        self, cards_by_suit: list[tuple[Suit, list[Card]]], state: Status
+    ) -> Card | None:
         """Selects a card to pass to the partner based on their likely strengths.
 
         This method attempts to pass a card in a suit where the partner is likely to have the strongest card (bock), or otherwise in their strongest suit.
@@ -195,23 +232,35 @@ class TrumpfColorMode(Mode):
         for suit_cards in cards_by_suit:
             suit = suit_cards[0]
             cards = suit_cards[1]
-            if not cards or suit == self.suit: # Added: we do not want to play trumpf suit as passing card.
+            if (
+                not cards or suit == self.suit
+            ):  # Added: we do not want to play trumpf suit as passing card.
                 continue
             current_bock = self.get_current_bock(suit)
             if current_bock is None:
                 continue
-            partner_has_bock: bool = self.card_counter.has_card_likelihood(self.card_counter.partner_id, current_bock, state) == 1
+            partner_has_bock: bool = (
+                self.card_counter.has_card_likelihood(
+                    self.card_counter.partner_id, current_bock, state
+                )
+                == 1
+            )
             if partner_has_bock:
                 return self.sort_by_rank(cards)[-1]
 
-        partner_suits_by_strength = self.card_counter.get_suits_by_strength(self.card_counter.partner_id)
+        partner_suits_by_strength = self.card_counter.get_suits_by_strength(
+            self.card_counter.partner_id
+        )
         for suit in partner_suits_by_strength:
-            if cards := self.card_counter.filter_suit_cards_from_tuple(cards_by_suit, suit):
+            if cards := self.card_counter.filter_suit_cards_from_tuple(
+                cards_by_suit, suit
+            ):
                 return self.sort_by_rank(cards)[-1]
-        return self.get_value_card(cards_by_suit, state) # Added, was None before.
+        return self.get_value_card(cards_by_suit, state)  # Added, was None before.
 
-
-    def can_make_all_stich(self, cards_by_suit: List[Tuple[Suit, List[Card]]], state) -> bool:
+    def can_make_all_stich(
+        self, cards_by_suit: list[tuple[Suit, list[Card]]], state
+    ) -> bool:
         """Checks whether all relevant cards in the player's hand behave like bocks (pseudo-bocks).
 
         This function evaluates the current round color, the player's hand, and the remaining cards to determine if, for every suit the player holds, their cards are as strong as the strongest remaining cards of that suit.
@@ -232,12 +281,14 @@ class TrumpfColorMode(Mode):
         # check if we can win stich.
         cards_by_suit_dict = dict(cards_by_suit)
         round_color = self.card_counter.get_round_color(state)
-        have_cards_of_round_color = bool(cards_by_suit_dict.get(round_color)) # checks if key is present and list of cards non-empty.
+        have_cards_of_round_color = bool(
+            cards_by_suit_dict.get(round_color)
+        )  # checks if key is present and list of cards non-empty.
 
         # There are cards on the table and we do not have the round color -> cannot win stich.
         if round_color is not None and not have_cards_of_round_color:
             return False
-        
+
         # There are cards on the table and we do have the round color -> check if we can win stich.
         if round_color is not None and have_cards_of_round_color:
             current_bock = self.get_current_bock(round_color)
@@ -247,12 +298,24 @@ class TrumpfColorMode(Mode):
                 handcards.remove(current_bock)
 
         # get all remaining cards.
-        remaining_cards = self.card_counter.remaining_cards(self.card_counter.cards_played())
+        remaining_cards = self.card_counter.remaining_cards(
+            self.card_counter.cards_played()
+        )
         remaining_cards_by_suit = dict(split_cards_by_suit(remaining_cards))
 
         # filter cards such that only our suits remain (because only those will be relevant, as we can decide which suit is to be played.)
-        opponent_1_no_trumpf = self.suit in self.card_counter.get_failed_to_serve_suits_flags(self.card_counter.opponent_1_id)
-        opponent_2_no_trumpf = self.suit in self.card_counter.get_failed_to_serve_suits_flags(self.card_counter.opponent_2_id)
+        opponent_1_no_trumpf = (
+            self.suit
+            in self.card_counter.get_failed_to_serve_suits_flags(
+                self.card_counter.opponent_1_id
+            )
+        )
+        opponent_2_no_trumpf = (
+            self.suit
+            in self.card_counter.get_failed_to_serve_suits_flags(
+                self.card_counter.opponent_2_id
+            )
+        )
         opponents_no_trumpf = opponent_1_no_trumpf and opponent_2_no_trumpf
         handcards_by_suit = split_cards_by_suit(handcards)
         for suit, suit_cards in handcards_by_suit:
@@ -268,8 +331,9 @@ class TrumpfColorMode(Mode):
                     return False
         return True
 
-
-    def should_win_stich_last_player(self, my_cards_by_suit: List[Tuple[Suit, List[Card]]], state: Status) -> bool:
+    def should_win_stich_last_player(
+        self, my_cards_by_suit: list[tuple[Suit, list[Card]]], state: Status
+    ) -> bool:
         """Determines if the player should try to win the stich as the last player.
 
         This function checks if the player is last to play, no other players have cards of the round color, and the player has more than one card of the round color.
@@ -283,12 +347,21 @@ class TrumpfColorMode(Mode):
         """
         are_last_player: bool = len(state.table) == 3
         round_color = self.card_counter.get_round_color(state)
-        cards_of_suit_remaining: List[Card] = flatten_matrix([x[1] for x in split_cards_by_suit(self.card_counter.unknown_cards()) if x[0] == round_color])
+        cards_of_suit_remaining: list[Card] = flatten_matrix(
+            [
+                x[1]
+                for x in split_cards_by_suit(self.card_counter.unknown_cards())
+                if x[0] == round_color
+            ]
+        )
         my_cards_of_suit = [x[1] for x in my_cards_by_suit if x[0] == round_color]
-        return all([are_last_player, not cards_of_suit_remaining, len(my_cards_of_suit) > 1])
+        return all(
+            [are_last_player, not cards_of_suit_remaining, len(my_cards_of_suit) > 1]
+        )
 
-
-    def should_win_stich_not_last_player(self, my_cards_by_suit: List[Tuple[Suit, List[Card]]], state: Status) -> bool:
+    def should_win_stich_not_last_player(
+        self, my_cards_by_suit: list[tuple[Suit, list[Card]]], state: Status
+    ) -> bool:
         """Determines if the player should try to win the stich when not the last player.
 
         This function checks if the player is not last to play, the last player has cards of the round color, only one card of the round color remains appart from own hand, and the player has more than one card of the round color.
@@ -302,11 +375,28 @@ class TrumpfColorMode(Mode):
         """
         are_last_player: bool = len(state.table) == 3
         round_color = self.card_counter.get_round_color(state)
-        cards_of_suit_remaining: List[Card] = flatten_matrix([x[1] for x in split_cards_by_suit(self.card_counter.unknown_cards()) if x[0] == round_color])
+        cards_of_suit_remaining: list[Card] = flatten_matrix(
+            [
+                x[1]
+                for x in split_cards_by_suit(self.card_counter.unknown_cards())
+                if x[0] == round_color
+            ]
+        )
         my_cards_of_suit = [x[1] for x in my_cards_by_suit if x[0] == round_color]
-        last_player_has_cards_of_suit_remaining: bool = self.card_counter.has_suit_likelihood(self.card_counter.opponent_1_id, round_color, state) == 1
-        return all([not are_last_player, last_player_has_cards_of_suit_remaining, len(cards_of_suit_remaining) == 1, len(my_cards_of_suit) > 1])
-
+        last_player_has_cards_of_suit_remaining: bool = (
+            self.card_counter.has_suit_likelihood(
+                self.card_counter.opponent_1_id, round_color, state
+            )
+            == 1
+        )
+        return all(
+            [
+                not are_last_player,
+                last_player_has_cards_of_suit_remaining,
+                len(cards_of_suit_remaining) == 1,
+                len(my_cards_of_suit) > 1,
+            ]
+        )
 
     def should_win_stich_partner_not_leader(self, state: Status) -> bool:
         """Determines if the player should try to win the stich when the partner is not the round leader.
@@ -320,13 +410,27 @@ class TrumpfColorMode(Mode):
             bool: True if the player should try to win the stich, False otherwise.
         """
         are_last_player: bool = len(state.table) == 3
-        partner_is_roundleader = self.card_counter.is_round_leader(self.card_counter.partner_id, state)
-        opponent_can_beat_partner = self.card_counter.has_cards_likelihood(self.card_counter.opponent_1_id, self.cards_beating_current_stich(self.card_counter.unknown_cards(), state), state) > 0
-        condition = partner_is_roundleader and (are_last_player or not opponent_can_beat_partner)
+        partner_is_roundleader = self.card_counter.is_round_leader(
+            self.card_counter.partner_id, state
+        )
+        opponent_can_beat_partner = (
+            self.card_counter.has_cards_likelihood(
+                self.card_counter.opponent_1_id,
+                self.cards_beating_current_stich(
+                    self.card_counter.unknown_cards(), state
+                ),
+                state,
+            )
+            > 0
+        )
+        condition = partner_is_roundleader and (
+            are_last_player or not opponent_can_beat_partner
+        )
         return not condition
-    
 
-    def want_stich(self, cards_by_suit: List[Tuple[Suit, List[Card]]], state: Status) -> bool:
+    def want_stich(
+        self, cards_by_suit: list[tuple[Suit, list[Card]]], state: Status
+    ) -> bool:
         """Determines whether the player should attempt to win the current stich.
 
         This function evaluates the player's hand and the current game state to decide if winning the stich is advantageous, considering the player's position and the trumpf suit.
@@ -349,8 +453,9 @@ class TrumpfColorMode(Mode):
                 return True
         return self.should_win_stich_partner_not_leader(state)
 
-
-    def get_value_card(self, cards_by_suit: List[Tuple[Suit, List[Card]]], state: Status) -> None | Card:
+    def get_value_card(
+        self, cards_by_suit: list[tuple[Suit, list[Card]]], state: Status
+    ) -> None | Card:
         """Determines and returns the value card to play based on the current game state.
 
         This function evaluates all available cards and selects the one with the lowest probability of being beaten by opponents, or returns None if not applicable.
@@ -361,23 +466,28 @@ class TrumpfColorMode(Mode):
 
         Returns:
             Card or None: The value card to play, or None if not applicable.
-        """ # TODO: delete and instead use treesearch? Or good enough and resource efficient?
+        """  # TODO: delete and instead use treesearch? Or good enough and resource efficient?
         if len(state.table) != 0:
             return None
-        opponents_beating_card: Dict[Card, int] = {}
+        opponents_beating_card: dict[Card, int] = {}
         for suit, suit_cards in cards_by_suit:
             for card in suit_cards:
                 stronger = self.stronger_cards_remaining(card)
                 if len(stronger) == 0:
                     opponents_beating_card[card] = 0
                 else:
-                    d1 = self.card_counter.has_card_likelihood(self.card_counter.opponent_1_id, card, state)
-                    d2 = self.card_counter.has_card_likelihood(self.card_counter.opponent_2_id, card, state)
-                    opponents_beating_card[card] = (d1+((1-d1)*d2))
+                    d1 = self.card_counter.has_card_likelihood(
+                        self.card_counter.opponent_1_id, card, state
+                    )
+                    d2 = self.card_counter.has_card_likelihood(
+                        self.card_counter.opponent_2_id, card, state
+                    )
+                    opponents_beating_card[card] = d1 + ((1 - d1) * d2)
         return min(opponents_beating_card, key=opponents_beating_card.get)
 
-
-    def get_suit_to_toss(self, available_cards: List[Card], state: Status) -> Suit | None:
+    def get_suit_to_toss(
+        self, available_cards: list[Card], state: Status
+    ) -> Suit | None:
         """Determines which suit to toss based on the current hand and game state.
 
         This function selects a suit to discard, preferring suits already tossed, or otherwise the suit with the highest minimum bock distance.
@@ -404,22 +514,25 @@ class TrumpfColorMode(Mode):
         # TODO: Improve? Here, only checks bock distance. If we have only one card, card is clearly terrible if not bock.
         # maybe check if bock distance is larger than len(cards_of_suit)
         # Never toss suit with trumpf!
-        bd_suits: List[Tuple[Suit, int]] = []
+        bd_suits: list[tuple[Suit, int]] = []
         for suit, suit_cards in cards_by_suit:
             if suit == self.suit:
                 continue
             if suit not in tossed_suits:
-                bock_distances: List[int] = []
-                bock_distances.extend(self.bock_distance(card, state) for card in suit_cards)
+                bock_distances: list[int] = []
+                bock_distances.extend(
+                    self.bock_distance(card, state) for card in suit_cards
+                )
                 if bock_distances:
                     bd_suits.append((suit, min(bock_distances)))
                 else:
                     bd_suits.append((suit, 0))
 
-        return max(bd_suits,key=lambda item:item[1])[0] if bd_suits else None
+        return max(bd_suits, key=lambda item: item[1])[0] if bd_suits else None
 
-
-    def get_stich_card(self, cards_by_suit: List[Tuple[Suit, List[int]]], state: Status) -> Card | None:
+    def get_stich_card(
+        self, cards_by_suit: list[tuple[Suit, list[int]]], state: Status
+    ) -> Card | None:
         """Determines the best card to play to win the current stich.
 
         This function evaluates the player's available cards and the current game state to select the strongest card that can win the stich, considering the player's position and the cards already played.
@@ -437,7 +550,9 @@ class TrumpfColorMode(Mode):
             return None
 
         current_stich_color = from_string_to_card(state.table[0].card).suit
-        current_color_and_trumpf_cards: List[Card] = flatten_matrix([x[1] for x in cards_by_suit if x[0] in [current_stich_color, self.suit]])
+        current_color_and_trumpf_cards: list[Card] = flatten_matrix(
+            [x[1] for x in cards_by_suit if x[0] in [current_stich_color, self.suit]]
+        )
         cards = self.cards_beating_current_stich(current_color_and_trumpf_cards, state)
         stich_cards = []
 
@@ -451,8 +566,12 @@ class TrumpfColorMode(Mode):
                 stronger = self.stronger_cards_unknown(card)
                 if not stronger:
                     stich_cards.append(card)
-                opponent_1_cannot_beat_card = bool(self.card_counter.has_cards_likelihood(self.card_counter.opponent_1_id, stronger, state))
-                if opponent_1_cannot_beat_card: # Opponent 2 has already played. We are first player (then there is no suit on table), or the played before us.
+                opponent_1_cannot_beat_card = bool(
+                    self.card_counter.has_cards_likelihood(
+                        self.card_counter.opponent_1_id, stronger, state
+                    )
+                )
+                if opponent_1_cannot_beat_card:  # Opponent 2 has already played. We are first player (then there is no suit on table), or the played before us.
                     stich_cards.append(card)
 
         # We have no cards that beat current stich
@@ -466,8 +585,7 @@ class TrumpfColorMode(Mode):
             stich_cards[0],
         )
 
-
-    def sort_by_rank(self, cards: List[Card]) -> List[Card]:
+    def sort_by_rank(self, cards: list[Card]) -> list[Card]:
         """Sorts the given cards in descending order based on their score for the current trumpf.
 
         This function ranks cards according to their value in the current trumpf mode, with the highest scoring card first.
@@ -478,10 +596,11 @@ class TrumpfColorMode(Mode):
         Returns:
             List[Card]: The sorted list of cards, highest score first.
         """
-        return sorted(cards, key=lambda card: card.get_score(self.trumpf_name()), reverse=True)
+        return sorted(
+            cards, key=lambda card: card.get_score(self.trumpf_name()), reverse=True
+        )
 
-
-    def has_only_jack_of_trumpf(self, player_cards: List[Card]) -> bool:
+    def has_only_jack_of_trumpf(self, player_cards: list[Card]) -> bool:
         """Checks if the player holds only the jack of the trumpf suit.
 
         This function returns True if the player's hand contains only the jack in the trumpf suit, and no other trumpf cards.
@@ -492,7 +611,7 @@ class TrumpfColorMode(Mode):
         Returns:
             bool: True if only the jack of trumpf is present, False otherwise.
         """
-        cards_by_suit: dict[Suit, List[Card]] = dict(split_cards_by_suit(player_cards))
+        cards_by_suit: dict[Suit, list[Card]] = dict(split_cards_by_suit(player_cards))
         cards_of_trumpf = cards_by_suit.get(self.suit)
 
         # Check if we have exactly one card of trumpf suit.
@@ -504,8 +623,7 @@ class TrumpfColorMode(Mode):
             return True
         return False
 
-
-    def has_jack_and_one_trumpf(self, player_cards: List[Card]) -> bool:
+    def has_jack_and_one_trumpf(self, player_cards: list[Card]) -> bool:
         """Checks if the player holds exactly two trumpf cards, one of which is the jack.
 
         This function returns True if the player's hand contains exactly two cards of the trumpf suit, and one of them is the jack.
@@ -516,7 +634,7 @@ class TrumpfColorMode(Mode):
         Returns:
             bool: True if the hand contains only the jack and one other trumpf card, False otherwise.
         """
-        cards_by_suit: dict[Suit, List[Card]] = dict(split_cards_by_suit(player_cards))
+        cards_by_suit: dict[Suit, list[Card]] = dict(split_cards_by_suit(player_cards))
         cards_of_trumpf = cards_by_suit.get(self.suit)
 
         # Check if we have exactly two cards of trumpf suit.
@@ -525,11 +643,10 @@ class TrumpfColorMode(Mode):
 
         # Check if any of our trumpf cards is Jack.
         if any(card.value == 11 for card in cards_of_trumpf):
-                return True
+            return True
         return False
 
-
-    def has_trumpfass_best_card(self, player_cards: List[Card]) -> bool:
+    def has_trumpfass_best_card(self, player_cards: list[Card]) -> bool:
         """Checks if the player holds the trumpf ace as their best trumpf card.
 
         This function returns True if the player's trumpf cards include the ace but do not include the jack or the nell.
@@ -540,7 +657,7 @@ class TrumpfColorMode(Mode):
         Returns:
             bool: True if only the trumpf ace is present without the jack or nell, False otherwise.
         """
-        cards_by_suit: dict[Suit, List[Card]] = dict(split_cards_by_suit(player_cards))
+        cards_by_suit: dict[Suit, list[Card]] = dict(split_cards_by_suit(player_cards))
         cards_of_trumpf = cards_by_suit.get(self.suit)
 
         # Check if we have cards of trumpf suit.
@@ -549,20 +666,23 @@ class TrumpfColorMode(Mode):
 
         # Check if the Ass is present, but the Nell and Jack are not.
         has_trumpf_ass = any(card.value == 14 for card in cards_of_trumpf)
-        has_stronger_than_trumpf_ass = any(card.value in {9, 11} for card in cards_of_trumpf)
+        has_stronger_than_trumpf_ass = any(
+            card.value in {9, 11} for card in cards_of_trumpf
+        )
 
         if has_trumpf_ass and not has_stronger_than_trumpf_ass:
             return True
         return False
 
+    def rate_suits_in_hand(
+        self, player_cards: list[Card]
+    ) -> dict[Suit, int]:  # TODO: not yet revised.
 
-    def rate_suits_in_hand(self, player_cards: List[Card]) -> Dict[Suit, int]: # TODO: not yet revised.
-
-        score_by_suit: Dict[Suit, int] = {}
+        score_by_suit: dict[Suit, int] = {}
         cards_by_suit = split_card_values_by_suit(player_cards)
 
         for suit, values in cards_by_suit:
-            sorted_values_in_suit: List[int] = sorted(values, reverse=True)
+            sorted_values_in_suit: list[int] = sorted(values, reverse=True)
             score = 0
             best_remaining_rank = 14
 
@@ -576,9 +696,10 @@ class TrumpfColorMode(Mode):
 
             score_by_suit[suit] = score
         return score_by_suit
-    
 
-    def toss_and_schmieren(self, available_cards: List[ Card], state: Status, round_color: Suit) -> Card | None:
+    def toss_and_schmieren(
+        self, available_cards: list[Card], state: Status, round_color: Suit
+    ) -> Card | None:
         """Selects a card to toss and potentially score extra points if the partner is round leader.
 
         This function chooses a card to discard, prioritizing cards with value 10, when the partner is round leader and either the player is last or the stich is not beatable.
@@ -592,10 +713,20 @@ class TrumpfColorMode(Mode):
             Card or None: The card to toss and schmieren, or None if no suitable card is found.
         """
         cards_by_suit = split_cards_by_suit(available_cards)
-        weak_cards = self.sort_by_rank([x[1] for x in cards_by_suit if x[0] == round_color][0])
-        cards_beating_stich = self.cards_beating_current_stich(self.card_counter.unknown_cards(), state)
-        beatable = bool(self.card_counter.has_cards_likelihood(self.card_counter.opponent_1_id, cards_beating_stich, state))
-        partner_is_roundleader: bool = self.card_counter.is_round_leader(self.card_counter.partner_id, state)
+        weak_cards = self.sort_by_rank(
+            [x[1] for x in cards_by_suit if x[0] == round_color][0]
+        )
+        cards_beating_stich = self.cards_beating_current_stich(
+            self.card_counter.unknown_cards(), state
+        )
+        beatable = bool(
+            self.card_counter.has_cards_likelihood(
+                self.card_counter.opponent_1_id, cards_beating_stich, state
+            )
+        )
+        partner_is_roundleader: bool = self.card_counter.is_round_leader(
+            self.card_counter.partner_id, state
+        )
         we_are_last_player: bool = len(state.table) == 3
         if partner_is_roundleader and (we_are_last_player or not beatable):
             for card in weak_cards:
@@ -603,8 +734,9 @@ class TrumpfColorMode(Mode):
                     return card
         return None
 
-
-    def serve_tossable_card_of_suit(self, available_cards: List[ Card], state: Status, round_color: Suit) -> Card:
+    def serve_tossable_card_of_suit(
+        self, available_cards: list[Card], state: Status, round_color: Suit
+    ) -> Card:
         """Selects a card to toss from a specific suit, prioritizing cards that can score extra points.
 
         This function attempts to select a card to toss and schmieren if possible; otherwise, it returns the weakest card of the specified suit.
@@ -622,11 +754,14 @@ class TrumpfColorMode(Mode):
             return candidate_card
 
         cards_by_suit = split_cards_by_suit(available_cards)
-        weak_cards = self.sort_by_rank([x[1] for x in cards_by_suit if x[0] == round_color][0])
+        weak_cards = self.sort_by_rank(
+            [x[1] for x in cards_by_suit if x[0] == round_color][0]
+        )
         return weak_cards[-1]
-    
 
-    def get_weak_suit(self, available_cards: List[Card], state: Status) -> List[Card] | None:
+    def get_weak_suit(
+        self, available_cards: list[Card], state: Status
+    ) -> list[Card] | None:
         """Finds and returns the weakest suit from the available cards.
 
         This function determines the weakest suit to play or discard from, based on the current hand, the suits to toss, and the number of unknown cards in each suit.
@@ -658,9 +793,10 @@ class TrumpfColorMode(Mode):
                 weak_suit = cards_by_suit_dict.get(suit)
 
         return weak_suit
-    
-    
-    def serve_tossable_card_of_any_suit(self, available_cards: List[Card], state: Status) -> Card | None:
+
+    def serve_tossable_card_of_any_suit(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Selects a card to toss from any suit, prioritizing cards that can score extra points.
 
         This function determines the weakest suit and selects a card to toss, giving preference to cards with value 10 if the partner is round leader and the stich is not beatable.
@@ -679,18 +815,30 @@ class TrumpfColorMode(Mode):
         if not bool(weak_cards):
             return None
 
-        cards_beating_current_stich = self.cards_beating_current_stich(self.card_counter.unknown_cards(), state)
-        beatable_by_opponent: bool = self.card_counter.has_cards_likelihood(self.card_counter.opponent_1_id, cards_beating_current_stich, state) != 0
-        partner_is_round_leader = self.card_counter.is_round_leader(self.card_counter.partner_id, state)
+        cards_beating_current_stich = self.cards_beating_current_stich(
+            self.card_counter.unknown_cards(), state
+        )
+        beatable_by_opponent: bool = (
+            self.card_counter.has_cards_likelihood(
+                self.card_counter.opponent_1_id, cards_beating_current_stich, state
+            )
+            != 0
+        )
+        partner_is_round_leader = self.card_counter.is_round_leader(
+            self.card_counter.partner_id, state
+        )
         we_are_final_player = len(state.table) == 3
-        if partner_is_round_leader and (we_are_final_player or not beatable_by_opponent):
+        if partner_is_round_leader and (
+            we_are_final_player or not beatable_by_opponent
+        ):
             for card in weak_cards:
                 if card.value == 10:
                     return card
         return weak_cards[-1]
 
-
-    def get_tossable_card(self, available_cards: List[Card], state: Status) -> Card | None:
+    def get_tossable_card(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Selects a card to toss based on the current hand and game state.
 
         This function determines which card to discard, considering whether the player must serve the round color, the weakest suit, and the likelihood of the card being beaten by opponents.
@@ -711,15 +859,18 @@ class TrumpfColorMode(Mode):
         our_only_trumpf_is_jack: bool = self.has_only_jack_of_trumpf(available_cards)
         have_to_serve: bool = self.have_to_serve(eligible_suits, round_color)
 
-        condition = all([is_not_first_player,
-                         have_to_serve,
-                         any([not round_color_is_trumpf, not our_only_trumpf_is_jack])])
+        condition = all(
+            [
+                is_not_first_player,
+                have_to_serve,
+                any([not round_color_is_trumpf, not our_only_trumpf_is_jack]),
+            ]
+        )
         if condition:
             return self.serve_tossable_card_of_suit(available_cards, state, round_color)
 
         else:
             return self.serve_tossable_card_of_any_suit(available_cards, state)
-        
 
     def opponents_out_of_turmpf(self, state: Status) -> bool:
         """Checks whether both opponents are out of trumpf cards.
@@ -732,12 +883,23 @@ class TrumpfColorMode(Mode):
         Returns:
             bool: True if both opponents are out of trumpf, False otherwise.
         """
-        opponent_1_no_trumpf: bool = self.card_counter.has_suit_likelihood(self.card_counter.opponent_1_id, self.suit, state) == 0
-        opponent_2_no_trumpf: bool = self.card_counter.has_suit_likelihood(self.card_counter.opponent_2_id, self.suit, state) == 0
+        opponent_1_no_trumpf: bool = (
+            self.card_counter.has_suit_likelihood(
+                self.card_counter.opponent_1_id, self.suit, state
+            )
+            == 0
+        )
+        opponent_2_no_trumpf: bool = (
+            self.card_counter.has_suit_likelihood(
+                self.card_counter.opponent_2_id, self.suit, state
+            )
+            == 0
+        )
         return opponent_1_no_trumpf and opponent_2_no_trumpf
 
-
-    def play_card_to_indicate_no_trumpf(self, available_cards: List[Card]) -> Card | None:
+    def play_card_to_indicate_no_trumpf(
+        self, available_cards: list[Card]
+    ) -> Card | None:
         """Selects a card that signals to the partner that the player has no trumpf cards.
 
         Geschoben and we have to open the game. We have no cards of the trumpf suit.
@@ -750,7 +912,13 @@ class TrumpfColorMode(Mode):
         Returns:
             Card or None: The card to play to indicate no trumpf, or None if no suitable card is found.
         """
-        suit_by_strength: Dict[Suit, int] = dict(sorted(self.rate_suits_in_hand(self.card_counter.get_hand()).items(),key=lambda x: x[1], reverse=True))
+        suit_by_strength: dict[Suit, int] = dict(
+            sorted(
+                self.rate_suits_in_hand(self.card_counter.get_hand()).items(),
+                key=lambda x: x[1],
+                reverse=True,
+            )
+        )
         cards_by_suit = dict(split_cards_by_suit(available_cards))
         backup_card: Card | None = None
 
@@ -762,8 +930,10 @@ class TrumpfColorMode(Mode):
             if is_empty_or_none(cards):
                 continue
             cards_by_rank = self.sort_by_rank(cards)
-            if any(card.value in [11,12,13] for card in cards_by_rank):
-                return list(filter(lambda card: card.value in [11, 12, 13], cards_by_rank))[-1]
+            if any(card.value in [11, 12, 13] for card in cards_by_rank):
+                return list(
+                    filter(lambda card: card.value in [11, 12, 13], cards_by_rank)
+                )[-1]
             # Set backup card of a strongest possible suit in case we do not have any Jack, Ober, Koenig.
             for card in reversed(cards_by_rank):
                 backup_card_not_yet_set: bool = backup_card is None
@@ -774,8 +944,9 @@ class TrumpfColorMode(Mode):
                     backup_card = card
         return backup_card
 
-
-    def play_card_to_indicate_only_jack_of_trumpf(self, available_cards: List[Card]) -> Card | None:
+    def play_card_to_indicate_only_jack_of_trumpf(
+        self, available_cards: list[Card]
+    ) -> Card | None:
         """Selects a card to indicate we have only the jack of trumpf suit.
 
         Geschoben and we have to open the game. We only have the jack of the trumpf suit.
@@ -789,7 +960,13 @@ class TrumpfColorMode(Mode):
         Returns:
             Card or None: The card to toss, or None if no suitable card is found.
         """
-        suit_by_strength: Dict[Suit, int] = dict(sorted(self.rate_suits_in_hand(self.card_counter.get_hand()).items(),key=lambda x: x[1], reverse=True))
+        suit_by_strength: dict[Suit, int] = dict(
+            sorted(
+                self.rate_suits_in_hand(self.card_counter.get_hand()).items(),
+                key=lambda x: x[1],
+                reverse=True,
+            )
+        )
         cards_by_suit = dict(split_cards_by_suit(available_cards))
         backup_card: Card | None = None
 
@@ -804,7 +981,7 @@ class TrumpfColorMode(Mode):
             if is_empty_or_none(cards):
                 continue
             cards_by_rank = self.sort_by_rank(cards)
-            if cards_by_rank[-1].value in [6,7,8,9]:
+            if cards_by_rank[-1].value in [6, 7, 8, 9]:
                 return cards_by_rank[-1]
             # Set backup card of a strongest possible suit in case we do not have any 6,7,8,9.
             for card in reversed(cards_by_rank):
@@ -815,9 +992,8 @@ class TrumpfColorMode(Mode):
                 if condition:
                     backup_card = card
         return backup_card
-    
 
-    def start_play_with_two_trumpf_geschoben(self, trumpf_cards: List[Card]) -> Card:
+    def start_play_with_two_trumpf_geschoben(self, trumpf_cards: list[Card]) -> Card:
         """Selects the opening card when the player has exactly two trumpf cards after a geschoben.
 
         This function avoids leading with the trumpf jack in this situation and instead chooses the other trumpf card, or otherwise plays the strongest available trumpf.
@@ -835,15 +1011,14 @@ class TrumpfColorMode(Mode):
             # Never play trumpf jack in this situation.
             # https://jassverzeichnis.ch/ausspielen-trumpf-bauer-zu-zweit/
             return list(filter(lambda card: card.value != 11, trumpf_cards))[0]
-        
+
         # Do not start with banner, otherwise partner thinks we have only one or three trumpf cards.
         if trumpf_cards[0].value == 10:
             return self.sort_by_rank(trumpf_cards)[1]
-        
-        return self.sort_by_rank(trumpf_cards)[0]
-    
 
-    def start_play_with_three_trumpf_cards(self, trumpf_cards: List[Card]) -> Card:
+        return self.sort_by_rank(trumpf_cards)[0]
+
+    def start_play_with_three_trumpf_cards(self, trumpf_cards: list[Card]) -> Card:
         """Selects the opening trumpf card when the player holds exactly three trumpf cards.
 
         This function prioritizes leading with the strongest signaling trumpf (nell or jack), otherwise playing the banner, or falling back to the best remaining trumpf based on ace presence.
@@ -862,18 +1037,19 @@ class TrumpfColorMode(Mode):
         # otherwise, if we have three cards and one of which is Banner: Play banner.
         if any(card.value == 10 for card in trumpf_cards):
             return list(filter(lambda card: card.value == 10, trumpf_cards))[0]
-        
+
         # otherwise, if we have three cards and the best is ace,
         # play the second strongest trumpf.
         # Source: https://jassverzeichnis.ch/jassen-trumpf-ass-ausspielen/
         if self.has_trumpfass_best_card(trumpf_cards):
             return trumpf_cards[1]
-        
+
         # in any other case, play the best card of trumpf.
         return trumpf_cards[0]
-    
 
-    def get_card_to_play_first_player_partnerrole_first_round(self, available_cards: List[Card]) -> Card | None:
+    def get_card_to_play_first_player_partnerrole_first_round(
+        self, available_cards: list[Card]
+    ) -> Card | None:
         """Determines the opening card to play in the first round when acting as partner.
 
         This function selects an appropriate trumpf or signaling card based on the exact number and composition of trumpf cards in hand, aiming to communicate trumpf strength or weakness to the partner.
@@ -885,7 +1061,9 @@ class TrumpfColorMode(Mode):
             Card or None: The selected opening card, or None if no suitable card can be determined.
         """
         cards_by_suit = split_cards_by_suit(available_cards)
-        sorted_trumpf_cards = self.sort_by_rank([x[1] for x in cards_by_suit if x[0] == self.suit][0])
+        sorted_trumpf_cards = self.sort_by_rank(
+            [x[1] for x in cards_by_suit if x[0] == self.suit][0]
+        )
         have_no_trumpf: bool = not sorted_trumpf_cards
         have_one_trumpf: bool = len(sorted_trumpf_cards) == 1
         have_two_trumpf: bool = len(sorted_trumpf_cards) == 2
@@ -897,21 +1075,22 @@ class TrumpfColorMode(Mode):
 
         if jack_solo_trumpf:
             return self.play_card_to_indicate_only_jack_of_trumpf(available_cards)
-        
+
         if have_one_trumpf and not jack_solo_trumpf:
             return sorted_trumpf_cards[0]
-        
+
         if have_two_trumpf:
             return self.start_play_with_two_trumpf_geschoben(sorted_trumpf_cards)
 
         if have_three_trumpf:
             return self.start_play_with_three_trumpf_cards(sorted_trumpf_cards)
-        
+
         # If we have four or more trumpf, or in any other case, we play the strongest trumpf.
         return sorted_trumpf_cards[0]
-    
 
-    def get_card_to_play_first_player_partnerrole_second_round(self, available_cards: List[Card], state: Status) -> Card | None:
+    def get_card_to_play_first_player_partnerrole_second_round(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Determines the opening card to play in the second round when acting as partner.
 
         This function selects a trumpf or high-value non-trumpf card based on whether opponents still have trumpf cards, aiming to either continue drawing trumpf or secure points once opponents are out of trumpf.
@@ -923,7 +1102,9 @@ class TrumpfColorMode(Mode):
             Card: The selected card to open the second round in partner role.
         """
         cards_by_suit = split_cards_by_suit(available_cards)
-        sorted_trumpf_cards = self.sort_by_rank([x[1] for x in cards_by_suit if x[0] == self.suit][0])
+        sorted_trumpf_cards = self.sort_by_rank(
+            [x[1] for x in cards_by_suit if x[0] == self.suit][0]
+        )
         non_trumpf_bocks = self.get_non_trumpf_bocks(available_cards)
 
         # Check if opponents do not have any trumpf cards remaining.
@@ -932,11 +1113,14 @@ class TrumpfColorMode(Mode):
         if not opponents_out_of_trumpf and sorted_trumpf_cards:
             return sorted_trumpf_cards[0]
         if len(non_trumpf_bocks) != 0 and opponents_out_of_trumpf:
-            return non_trumpf_bocks[0] # TODO: not yet tested
-        return self.get_passing_card(cards_by_suit, state) # TODO: is this correct? Check! # TODO: not yet tested
+            return non_trumpf_bocks[0]  # TODO: not yet tested
+        return self.get_passing_card(
+            cards_by_suit, state
+        )  # TODO: is this correct? Check! # TODO: not yet tested
 
-
-    def get_card_to_play_first_player_partnerrole(self, available_cards: List[Card], state: Status) -> Card | None:
+    def get_card_to_play_first_player_partnerrole(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Determines the opening card to play as the first player when acting in the partner role.
 
         This function chooses a trumpf or non-trumpf card based on the current round, remaining trumpf cards, and whether opponents are out of trumpf, aiming to support and coordinate with the partner.
@@ -947,36 +1131,47 @@ class TrumpfColorMode(Mode):
 
         Returns:
             Card or None: The selected card to open the round in partner role, or None if no suitable card is found.
-        """        
+        """
         cards_by_suit = split_cards_by_suit(available_cards)
-        sorted_trumpf_cards = self.sort_by_rank([x[1] for x in cards_by_suit if x[0] == self.suit][0])
+        sorted_trumpf_cards = self.sort_by_rank(
+            [x[1] for x in cards_by_suit if x[0] == self.suit][0]
+        )
         non_trumpf_bocks = self.get_non_trumpf_bocks(available_cards)
         current_round = self.card_counter.current_round()
         opponents_out_of_trumpf = self.opponents_out_of_turmpf(state)
-        
+
         # Get Card to play in the first round.
         if current_round == 0:
-            return self.get_card_to_play_first_player_partnerrole_first_round(available_cards)
+            return self.get_card_to_play_first_player_partnerrole_first_round(
+                available_cards
+            )
 
         # Get Card to play in the second round
         if current_round == 1:
-            return self.get_card_to_play_first_player_partnerrole_second_round(available_cards, state)
+            return self.get_card_to_play_first_player_partnerrole_second_round(
+                available_cards, state
+            )
 
         # Get Card to play in any other round
-        sorted_trumpf_cards = list(filter(lambda card: card.value != 11, sorted_trumpf_cards))
+        sorted_trumpf_cards = list(
+            filter(lambda card: card.value != 11, sorted_trumpf_cards)
+        )
         if sorted_trumpf_cards and not opponents_out_of_trumpf:
             return sorted_trumpf_cards[0]
         elif opponents_out_of_trumpf and len(non_trumpf_bocks) != 0:
             return non_trumpf_bocks[0]
-        
-        partner_had_stich_previously = self.card_counter.had_stich_previously(self.card_counter.partner_id)
+
+        partner_had_stich_previously = self.card_counter.had_stich_previously(
+            self.card_counter.partner_id
+        )
         if partner_had_stich_previously:
             return self.get_passing_card(cards_by_suit, state)
         else:
             return self.get_value_card(cards_by_suit, state)
 
-
-    def get_card_to_play_first_player_trumpfrole_first_round(self, sorted_trumpf_cards: List[Card]) -> Card | None:
+    def get_card_to_play_first_player_trumpfrole_first_round(
+        self, sorted_trumpf_cards: list[Card]
+    ) -> Card | None:
         """Determines the opening trumpf card to play in the first round when in the trumpf role.
 
         This function selects a trumpf card based on the number and strength of trumpf cards in hand, prioritizing key signaling cards such as jack, nell, and ace to communicate trumpf strength.
@@ -995,19 +1190,20 @@ class TrumpfColorMode(Mode):
         # Jack, Nell and at least four trumpf cards -> play Nell
         if trumpf_count >= 4 and have_jack and have_nell:
             return list(filter(lambda card: card.value == 9, sorted_trumpf_cards))[0]
-        
+
         # Jack, no Nell and at least four trumpf cards -> play Jack
         if trumpf_count >= 4 and have_jack and not have_nell:
             return list(filter(lambda card: card.value == 11, sorted_trumpf_cards))[0]
-        
+
         # Nell and Ace with five cards -> play Nell. Partner has jack or opponent takes, giving us highest Trumpf again.
         if trumpf_count >= 5 and have_nell and have_ace and not have_jack:
             return list(filter(lambda card: card.value == 9, sorted_trumpf_cards))[0]
-        
-        return sorted_trumpf_cards[0]
-    
 
-    def get_card_to_play_first_player_trumpfrole_second_round(self, available_cards: List[Card], state: Status) -> Card | None:
+        return sorted_trumpf_cards[0]
+
+    def get_card_to_play_first_player_trumpfrole_second_round(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Determines the opening trumpf card to play in the second round when in the trumpf role.
 
         This function selects between continuing to pull trumpf or playing high-value non-trumpf cards, based on whether opponents still have trumpf and on the cards played in the first round.
@@ -1020,7 +1216,9 @@ class TrumpfColorMode(Mode):
             Card or None: The selected card to open the second round in trumpf role, or None if no suitable card is found.
         """
         cards_by_suit = split_cards_by_suit(available_cards)
-        sorted_trumpf_cards = self.sort_by_rank([x[1] for x in cards_by_suit if x[0] == self.suit][0])
+        sorted_trumpf_cards = self.sort_by_rank(
+            [x[1] for x in cards_by_suit if x[0] == self.suit][0]
+        )
         opponents_out_of_trumpf = self.opponents_out_of_turmpf(state)
 
         # first check opponent out of trumpf
@@ -1028,25 +1226,40 @@ class TrumpfColorMode(Mode):
         if opponents_out_of_trumpf and non_trumpf_bocks:
             return non_trumpf_bocks[0]
 
-        my_first_played_card: Card = self.card_counter.played_cards[self.card_counter.me.id][0]
-        opponent_1_first_card: Card = self.card_counter.played_cards[self.card_counter.opponent_1_id][0]
-        opponent_2_first_card: Card = self.card_counter.played_cards[self.card_counter.opponent_2_id][0]
+        my_first_played_card: Card = self.card_counter.played_cards[
+            self.card_counter.me.id
+        ][0]
+        opponent_1_first_card: Card = self.card_counter.played_cards[
+            self.card_counter.opponent_1_id
+        ][0]
+        opponent_2_first_card: Card = self.card_counter.played_cards[
+            self.card_counter.opponent_2_id
+        ][0]
 
-        my_first_card_jack = my_first_played_card.suit == self.suit and my_first_played_card.value == 11
-        opponent_1_first_card_nell = opponent_1_first_card.suit == self.suit and opponent_1_first_card.value == 9
-        opponent_2_first_card_nell = opponent_2_first_card.suit == self.suit and opponent_2_first_card.value == 9
+        my_first_card_jack = (
+            my_first_played_card.suit == self.suit and my_first_played_card.value == 11
+        )
+        opponent_1_first_card_nell = (
+            opponent_1_first_card.suit == self.suit and opponent_1_first_card.value == 9
+        )
+        opponent_2_first_card_nell = (
+            opponent_2_first_card.suit == self.suit and opponent_2_first_card.value == 9
+        )
 
-        if my_first_card_jack and any([opponent_1_first_card_nell, opponent_2_first_card_nell]):
+        if my_first_card_jack and any(
+            [opponent_1_first_card_nell, opponent_2_first_card_nell]
+        ):
             return sorted_trumpf_cards[0]
-        
+
         have_ace = any(card.value == 14 for card in sorted_trumpf_cards)
         if my_first_card_jack and have_ace and len(sorted_trumpf_cards) >= 2:
             return sorted_trumpf_cards[1]
-        
+
         return sorted_trumpf_cards[0]
 
-
-    def get_card_to_play_first_player_trumpfrole(self, available_cards: List[Card], state: Status) -> Card | None:
+    def get_card_to_play_first_player_trumpfrole(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Determines the opening card to play as the first player when in the trumpf role.
 
         This function selects between various trumpf and non-trumpf options based on the round number, remaining trumpf distribution, and availability of high-value non-trumpf cards.
@@ -1059,33 +1272,41 @@ class TrumpfColorMode(Mode):
             Card or None: The selected card to open the round in trumpf role, or None if no suitable card is found.
         """
         cards_by_suit = split_cards_by_suit(available_cards)
-        sorted_trumpf_cards = self.sort_by_rank([x[1] for x in cards_by_suit if x[0] == self.suit][0])
+        sorted_trumpf_cards = self.sort_by_rank(
+            [x[1] for x in cards_by_suit if x[0] == self.suit][0]
+        )
         non_trumpf_bocks = self.get_non_trumpf_bocks(available_cards)
         current_round = self.card_counter.current_round()
         opponents_out_of_trumpf = self.opponents_out_of_turmpf(state)
 
         # Get Card to play in the first round.
         if current_round == 0:
-            return self.get_card_to_play_first_player_trumpfrole_first_round(sorted_trumpf_cards)
-        
-        if current_round == 1:
-            return self.get_card_to_play_first_player_trumpfrole_second_round(available_cards, state)
+            return self.get_card_to_play_first_player_trumpfrole_first_round(
+                sorted_trumpf_cards
+            )
 
-        # Pull opponents Trumpfs 
+        if current_round == 1:
+            return self.get_card_to_play_first_player_trumpfrole_second_round(
+                available_cards, state
+            )
+
+        # Pull opponents Trumpfs
         pulling_trumpfs = len(sorted_trumpf_cards) > 0 and not opponents_out_of_trumpf
         if pulling_trumpfs:
             return sorted_trumpf_cards[0]
-        
+
         # Opponents out of trumpf -> we play bocks.
         if opponents_out_of_trumpf and non_trumpf_bocks:
             return non_trumpf_bocks[0]
-        
+
         if opponents_out_of_trumpf and not non_trumpf_bocks:
             return self.get_value_card(cards_by_suit, state)
 
         # TODO: Everything below was kept from strategy player. Improvement required.
         if not opponents_out_of_trumpf and len(sorted_trumpf_cards) == 0:
-            return self.get_tossable_card(available_cards, state) # TODO: This is definitely wrong! Anziehen, NICHT verwerfen. But what do we play?
+            return self.get_tossable_card(
+                available_cards, state
+            )  # TODO: This is definitely wrong! Anziehen, NICHT verwerfen. But what do we play?
 
         # We still have trumpf, opponents no trumpf, we have no bock cards.
         if not self.card_counter.had_stich_previously(self.card_counter.partner_id):
@@ -1093,8 +1314,9 @@ class TrumpfColorMode(Mode):
         else:
             return self.get_value_card(cards_by_suit, state)
 
-
-    def get_card_to_play_first_player_no_role(self, available_cards: List[Card], state: Status) -> Card | None:
+    def get_card_to_play_first_player_no_role(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Determines the opening card to play as the first player when having no specific role.
 
         This function selects between pulling trumpf, playing high-value non-trumpf cards, or discarding weaker cards based on the current trumpf distribution and opponents' remaining trumpf cards.
@@ -1107,22 +1329,30 @@ class TrumpfColorMode(Mode):
             Card or None: The selected card to open the round with no specific role, or None if no suitable card is found.
         """
         cards_by_suit = split_cards_by_suit(available_cards)
-        sorted_trumpf_cards = self.sort_by_rank([x[1] for x in cards_by_suit if x[0] == self.suit][0])
+        sorted_trumpf_cards = self.sort_by_rank(
+            [x[1] for x in cards_by_suit if x[0] == self.suit][0]
+        )
         non_trumpf_bocks = self.get_non_trumpf_bocks(available_cards)
         opponents_out_of_trumpf = self.opponents_out_of_turmpf(state)
 
         # Pull Trumpfs if we have good Bock Cards.
         # TODO: Find a good definition for having good bock cards. here, just given if we have bock.
-        pulling_trumpfs = len(sorted_trumpf_cards) > 0 and non_trumpf_bocks and not opponents_out_of_trumpf
+        pulling_trumpfs = (
+            len(sorted_trumpf_cards) > 0
+            and non_trumpf_bocks
+            and not opponents_out_of_trumpf
+        )
         if pulling_trumpfs:
             return sorted_trumpf_cards[0]
-        
+
         if opponents_out_of_trumpf and non_trumpf_bocks:
             return non_trumpf_bocks[0]
 
         # TODO: Everything below was kept from strategy player. Improvement required.
         if not opponents_out_of_trumpf and len(sorted_trumpf_cards) == 0:
-            return self.get_tossable_card(available_cards, state) # TODO: This is definitely wrong! Anziehen, NICHT verwerfen. But what do we play?
+            return self.get_tossable_card(
+                available_cards, state
+            )  # TODO: This is definitely wrong! Anziehen, NICHT verwerfen. But what do we play?
 
         # We still have trumpf, opponents no trumpf, we have no bock cards.
         if not self.card_counter.had_stich_previously(self.card_counter.partner_id):
@@ -1130,8 +1360,9 @@ class TrumpfColorMode(Mode):
         else:
             return self.get_value_card(cards_by_suit, state)
 
-
-    def get_card_to_play_first_player(self, available_cards: List[Card], state: Status, role: str) -> Card | None:
+    def get_card_to_play_first_player(
+        self, available_cards: list[Card], state: Status, role: str
+    ) -> Card | None:
         """Determines the opening card to play based on the player's role.
 
         This function delegates the decision to specialized role-based strategies for trumpf, partner, or off roles, and validates that the provided role is supported.
@@ -1147,19 +1378,24 @@ class TrumpfColorMode(Mode):
         Raises:
             ValueError: If the provided role is not one of the supported values.
         """
-        if role == 'Trumpf':
+        if role == "Trumpf":
             return self.get_card_to_play_first_player_trumpfrole(available_cards, state)
-        
-        if role == 'Partner':
-            return self.get_card_to_play_first_player_partnerrole(available_cards, state)
 
-        if role == 'Off':
+        if role == "Partner":
+            return self.get_card_to_play_first_player_partnerrole(
+                available_cards, state
+            )
+
+        if role == "Off":
             return self.get_card_to_play_first_player_no_role(available_cards, state)
-        
-        raise ValueError(f'Role is expected to be Trumpf, Partner, or Off. However, {role=}.')
 
+        raise ValueError(
+            f"Role is expected to be Trumpf, Partner, or Off. However, {role=}."
+        )
 
-    def get_card_to_play_second_player(self, available_cards: List[Card], state: Status) -> Card | None:
+    def get_card_to_play_second_player(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Determines the card to play when acting as the second player in a round.
 
         This function attempts to win the stich with an appropriate card if possible, otherwise it selects a suitable card to toss.
@@ -1179,9 +1415,10 @@ class TrumpfColorMode(Mode):
         if stich_card is None:
             return self.get_tossable_card(available_cards, state)
         return stich_card
-    
 
-    def get_card_to_play_third_player_trumpfrole(self, available_cards: List[Card], state: Status) -> Card | None:
+    def get_card_to_play_third_player_trumpfrole(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Determines the card to play as the third player when in the trumpf role.
 
         This function decides whether to attempt winning the stich with a suitable trumpf or non-trumpf card, or instead discard a card when taking the stich is not desired or not possible.
@@ -1209,10 +1446,11 @@ class TrumpfColorMode(Mode):
         if card is not None:
             return card
         else:
-            return self.get_tossable_card(available_cards, state)          
+            return self.get_tossable_card(available_cards, state)
 
-
-    def get_card_to_play_third_player_partnerrole(self, available_cards: List[Card], state: Status) -> Card | None:
+    def get_card_to_play_third_player_partnerrole(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Determines the card to play as the third player when acting in the partner role.
 
         This function balances preserving strong trumpf, supporting the partner's winning position, and using tactical overtrump or discard plays to optimize the team's overall stich outcome.
@@ -1225,45 +1463,62 @@ class TrumpfColorMode(Mode):
             Card or None: The selected card to play as third player in partner role, or None if no suitable card can be found.
         """
         cards_by_suit = split_cards_by_suit(available_cards)
-        sorted_trumpf_cards = self.sort_by_rank([x[1] for x in cards_by_suit if x[0] == self.suit][0])
+        sorted_trumpf_cards = self.sort_by_rank(
+            [x[1] for x in cards_by_suit if x[0] == self.suit][0]
+        )
         round_color = self.card_counter.get_round_color(state)
 
         current_round = self.card_counter.current_round()
         first_round: bool = current_round == 0
         partner_card = self.card_counter.current_stich[self.card_counter.partner_id]
         opponent_card = self.card_counter.current_stich[self.card_counter.opponent_2_id]
-        opponent_card_trumpf_jack = opponent_card.suit == self.suit and opponent_card.value == 11
+        opponent_card_trumpf_jack = (
+            opponent_card.suit == self.suit and opponent_card.value == 11
+        )
         have_nell = any(card.value == 9 for card in sorted_trumpf_cards)
         have_jack = any(card.value == 11 for card in sorted_trumpf_cards)
 
         # if two trumpfs and one is nell, do not play nell on partners trumpf jack.
-        condition = all([round_color == self.suit,
-                            partner_card.value == 11,
-                            have_nell,
-                            len(sorted_trumpf_cards) == 2
-                            ])
+        condition = all(
+            [
+                round_color == self.suit,
+                partner_card.value == 11,
+                have_nell,
+                len(sorted_trumpf_cards) == 2,
+            ]
+        )
         if condition:
             return sorted_trumpf_cards[1]
-        
+
         # Does not follow the rules, but we do not waste strong trumpf on lost stich.
-        if opponent_card_trumpf_jack and round_color == self.suit and sorted_trumpf_cards:
+        if (
+            opponent_card_trumpf_jack
+            and round_color == self.suit
+            and sorted_trumpf_cards
+        ):
             return sorted_trumpf_cards[-1]
 
         # Partner has stich with nell. We do not waste Jack. Play second best trumpf instead.
-        condition = all([first_round,
-                         partner_card.value == 9,
-                         have_jack,
-                         len(sorted_trumpf_cards) > 1
-                         ])
+        condition = all(
+            [
+                first_round,
+                partner_card.value == 9,
+                have_jack,
+                len(sorted_trumpf_cards) > 1,
+            ]
+        )
         if condition:
             return sorted_trumpf_cards[1]
 
         # Partner has stich with nell. We do not waste Jack. Toss suit instead.
-        condition = all([first_round,
-                         partner_card.value == 9,
-                         have_jack,
-                         len(sorted_trumpf_cards) == 1
-                         ])
+        condition = all(
+            [
+                first_round,
+                partner_card.value == 9,
+                have_jack,
+                len(sorted_trumpf_cards) == 1,
+            ]
+        )
         if condition:
             return self.toss_and_schmieren(available_cards, state, self.suit)
 
@@ -1290,8 +1545,9 @@ class TrumpfColorMode(Mode):
         # Toss away useless cards.
         return self.get_tossable_card(available_cards, state)
 
-
-    def get_card_to_play_third_player_no_role(self, available_cards: List[Card], state: Status) -> Card | None:
+    def get_card_to_play_third_player_no_role(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Determines the card to play as the third player when having no specific role.
 
         This function decides whether to attempt winning the stich or discard a less valuable card, based on the current table situation and the player's desire to take the stich.
@@ -1315,8 +1571,9 @@ class TrumpfColorMode(Mode):
                 return stich_card
             return self.get_tossable_card(available_cards, state)
 
-
-    def get_card_to_play_third_player(self, available_cards: List[Card], state: Status, role: str) -> Card | None:
+    def get_card_to_play_third_player(
+        self, available_cards: list[Card], state: Status, role: str
+    ) -> Card | None:
         """Determines the card to play as the third player based on the current role.
 
         This function delegates the decision to the corresponding role-specific strategy for trumpf, partner, or off roles, and validates that the provided role is supported.
@@ -1332,19 +1589,24 @@ class TrumpfColorMode(Mode):
         Raises:
             ValueError: If the provided role is not one of the supported values.
         """
-        if role == 'Trumpf':
+        if role == "Trumpf":
             return self.get_card_to_play_third_player_trumpfrole(available_cards, state)
 
-        elif role == 'Off':
+        elif role == "Off":
             return self.get_card_to_play_third_player_no_role(available_cards, state)
 
-        elif role == 'Partner':
-            return self.get_card_to_play_third_player_partnerrole(available_cards, state)
-        
-        raise ValueError(f'Role is expected to be Trumpf, Partner, or Off. However, {role=}.')
- 
+        elif role == "Partner":
+            return self.get_card_to_play_third_player_partnerrole(
+                available_cards, state
+            )
 
-    def get_card_to_play_fourth_player(self, available_cards: List[Card], state: Status) -> Card | None:
+        raise ValueError(
+            f"Role is expected to be Trumpf, Partner, or Off. However, {role=}."
+        )
+
+    def get_card_to_play_fourth_player(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:
         """Determines the card to play when acting as the fourth (last) player in a round.
 
         This function decides whether to secure the stich with a winning card or to discard a less valuable card when winning the stich is not desired or possible.
@@ -1368,8 +1630,9 @@ class TrumpfColorMode(Mode):
                 return stich_card
         return self.get_tossable_card(available_cards, state)
 
-
-    def get_card_to_play(self, available_cards: List[Card], state: Status, role: str) -> Card | None:
+    def get_card_to_play(
+        self, available_cards: list[Card], state: Status, role: str
+    ) -> Card | None:
         """Determines the card to play based on the player's table position and role.
 
         This function routes the decision to the appropriate position- and role-specific strategy method, ensuring that only valid table positions are accepted.
@@ -1398,19 +1661,21 @@ class TrumpfColorMode(Mode):
         # Partner started round
         if current_position == 2:
             return self.get_card_to_play_third_player(available_cards, state, role)
-            
+
         # We are the last player to play this round
         if current_position == 3:
             return self.get_card_to_play_fourth_player(available_cards, state)
-        
-        raise ValueError(f'Position is expected to be 0-3. However, {current_position=}.')
 
+        raise ValueError(
+            f"Position is expected to be 0-3. However, {current_position=}."
+        )
 
-    def unterzug(self, state: Status):# TODO: Implement!
+    def unterzug(self, state: Status):  # TODO: Implement!
         return None
-   
 
-    def ueberzug(self, available_cards: List[Card], state: Status) -> Card | None: # TODO: Test
+    def ueberzug(
+        self, available_cards: list[Card], state: Status
+    ) -> Card | None:  # TODO: Test
         """Determines whether a trumpf overtrump ('Ueberzug') play is possible and selects the card to use.
 
         This function checks positional, suit, and card-distribution constraints to decide if an overtrump maneuver is valid and returns an appropriate trumpf card when the conditions are met.
@@ -1431,32 +1696,43 @@ class TrumpfColorMode(Mode):
         round_color = self.card_counter.get_round_color(state)
         if round_color == self.suit:
             return None
-        
+
         # check if hand of self contains bock and 3rd bock of current suit.
         cards_by_suit = split_cards_by_suit(available_cards)
-        cards_of_interest = self.card_counter.filter_suit_cards_from_tuple(cards_by_suit, round_color)
-        cards_remaining = self.card_counter.remaining_cards(self.card_counter.cards_played())
-        cards_remaining_in_suit = self.sort_by_rank([x for x in cards_remaining if x.suit == round_color])
+        cards_of_interest = self.card_counter.filter_suit_cards_from_tuple(
+            cards_by_suit, round_color
+        )
+        cards_remaining = self.card_counter.remaining_cards(
+            self.card_counter.cards_played()
+        )
+        cards_remaining_in_suit = self.sort_by_rank(
+            [x for x in cards_remaining if x.suit == round_color]
+        )
 
         # Must have at least two cards.
         if len(cards_remaining_in_suit) < 2:
             return None
-        
+
         # Must have Trumpf, no opponent has trumpf
         opponents_no_trumpf = self.opponents_out_of_turmpf(state)
-        trumpf_cards = self.card_counter.filter_suit_cards_from_tuple(cards_by_suit, self.suit)
+        trumpf_cards = self.card_counter.filter_suit_cards_from_tuple(
+            cards_by_suit, self.suit
+        )
         have_trumpf = len(trumpf_cards) > 0
         if not (have_trumpf and opponents_no_trumpf):
             return None
 
         # check if hand of self contains bock and 3rd bock of current suit.
-        have_strongest_card = cards_remaining_in_suit[0] in cards_of_interest # We must have strongest card.
-        have_second_strongest_card = cards_remaining_in_suit[1] in cards_of_interest # We must not have second strongest card, because else Ueberzug does not make sense.
+        have_strongest_card = (
+            cards_remaining_in_suit[0] in cards_of_interest
+        )  # We must have strongest card.
+        have_second_strongest_card = (
+            cards_remaining_in_suit[1] in cards_of_interest
+        )  # We must not have second strongest card, because else Ueberzug does not make sense.
         if not have_strongest_card or have_second_strongest_card:
             return None
 
         return trumpf_cards[0]
-        
 
     def partner_has_only_trumpf_bauer_flag(self) -> None:
         """Adds flags indicating the partner has only the trumpf Bauer card.
@@ -1466,7 +1742,7 @@ class TrumpfColorMode(Mode):
         Returns:
             None
         """
-        trumpf_cards: List[Card] | None = None
+        trumpf_cards: list[Card] | None = None
         # Partner plays non-trumpf low card. Has only Trumpf Bauer.
         for suit_cards in split_cards_by_suit(self.card_counter.unknown_cards()):
             if suit_cards[0].name == self.trumpf_name().name:
@@ -1474,12 +1750,16 @@ class TrumpfColorMode(Mode):
         assert trumpf_cards is not None
         for trumpf_card in trumpf_cards:
             if trumpf_card.value != 11:
-                self.add_flag(DoesntHaveCardFlag(trumpf_card), self.card_counter.partner_id)
+                self.add_flag(
+                    DoesntHaveCardFlag(trumpf_card), self.card_counter.partner_id
+                )
             else:
-                self.add_flag(DoesntHaveCardFlag(trumpf_card), self.card_counter.opponent_1_id)
-                self.add_flag(DoesntHaveCardFlag(trumpf_card), self.card_counter.opponent_2_id)
-        return None
-
+                self.add_flag(
+                    DoesntHaveCardFlag(trumpf_card), self.card_counter.opponent_1_id
+                )
+                self.add_flag(
+                    DoesntHaveCardFlag(trumpf_card), self.card_counter.opponent_2_id
+                )
 
     def partner_has_no_trumpf_cards_flag(self) -> None:
         """Adds flags indicating the partner has no trumpf cards.
@@ -1492,10 +1772,10 @@ class TrumpfColorMode(Mode):
         for suit_cards in split_cards_by_suit(self.card_counter.unknown_cards()):
             if suit_cards[0].name == self.trumpf_name().name:
                 for trumpf_card in suit_cards[1]:
-                    self.add_flag(DoesntHaveCardFlag(trumpf_card), self.card_counter.partner_id)
+                    self.add_flag(
+                        DoesntHaveCardFlag(trumpf_card), self.card_counter.partner_id
+                    )
         self.add_flag(FailedToServeSuitFlag(self.suit), self.card_counter.partner_id)
-        return None
-
 
     def partner_non_trumpf_opening(self, card: Card) -> None:
         """Updates flags when the partner opens with a non-trumpf card.
@@ -1513,8 +1793,6 @@ class TrumpfColorMode(Mode):
 
         if card.value >= 10:
             self.partner_has_no_trumpf_cards_flag()
-        return None
-
 
     def update_partner_vorhand_flag(self, card: Card) -> None:
         """Updates flags based on the partner's opening play when they made trumpf (vorhand).
@@ -1526,7 +1804,7 @@ class TrumpfColorMode(Mode):
 
         Returns:
             None
-        """      
+        """
         card_is_trumpf: bool = self.is_trumpfcard(card)
         nell: bool = card.value == 9
         jack: bool = card.value == 11
@@ -1534,16 +1812,26 @@ class TrumpfColorMode(Mode):
 
         if card_is_trumpf and nell:
             # Has either Jack + Nell with at least two more trumpf, or nell and Ace with at least three more trumpf.
-            self.add_flag(NumberOfTrumpfFlag(max=len(remaining_trumpf), min=4), self.card_counter.partner_id)
-            self.add_flag(DoesntHaveCardFlag(Card(self.suit, 11)), self.card_counter.opponent_1_id) # 99 Percent sure. Good enough.
-            self.add_flag(DoesntHaveCardFlag(Card(self.suit, 11)), self.card_counter.opponent_2_id) # 99 Percent sure. Good enough.
-        
+            self.add_flag(
+                NumberOfTrumpfFlag(max=len(remaining_trumpf), min=4),
+                self.card_counter.partner_id,
+            )
+            self.add_flag(
+                DoesntHaveCardFlag(Card(self.suit, 11)), self.card_counter.opponent_1_id
+            )  # 99 Percent sure. Good enough.
+            self.add_flag(
+                DoesntHaveCardFlag(Card(self.suit, 11)), self.card_counter.opponent_2_id
+            )  # 99 Percent sure. Good enough.
+
         if card_is_trumpf and jack:
             # Partner would have opened with nell if he had jack and nell of trumpf.
-            self.add_flag(NumberOfTrumpfFlag(max=len(remaining_trumpf), min=4), self.card_counter.partner_id)
-            self.add_flag(DoesntHaveCardFlag(Card(self.suit, 9)),self.card_counter.partner_id)
-        return None
-
+            self.add_flag(
+                NumberOfTrumpfFlag(max=len(remaining_trumpf), min=4),
+                self.card_counter.partner_id,
+            )
+            self.add_flag(
+                DoesntHaveCardFlag(Card(self.suit, 9)), self.card_counter.partner_id
+            )
 
     def update_partner_geschoben_flag(self, card: Card) -> None:
         """Updates flags based on the partner's opening play when the game was geschoben.
@@ -1559,36 +1847,44 @@ class TrumpfColorMode(Mode):
         """
         card_is_trumpf: bool = self.is_trumpfcard(card)
 
-        # Geschoben, and partner opens with Trumpf Banner: 
+        # Geschoben, and partner opens with Trumpf Banner:
         # Has either only Banner or exactly three trumpf cards.
         card_is_banner = card.value == 10
         if card_is_trumpf and card_is_banner:
-            self.add_flag(NumberOfTrumpfFlag(max=3, min=1), self.card_counter.partner_id)
-            return None
-        
+            self.add_flag(
+                NumberOfTrumpfFlag(max=3, min=1), self.card_counter.partner_id
+            )
+            return
+
         # Geschoben, Partner opens with trumpf jack. Has three trumpf. (Technically more, but then he would have made trumpf himself.)
         card_is_jack = card.value == 11
         if card_is_trumpf and card_is_jack:
             remaining_trumpf = self.card_counter.remaining_by_suit(self.suit)
-            self.add_flag(NumberOfTrumpfFlag(max=len(remaining_trumpf), min=3), self.card_counter.partner_id)
-            return None
-        
+            self.add_flag(
+                NumberOfTrumpfFlag(max=len(remaining_trumpf), min=3),
+                self.card_counter.partner_id,
+            )
+            return
+
         if card_is_trumpf:
             for stronger_card in self.stronger_cards_remaining(card):
-            #     Ass zu dritt: Zweithöchste Karte spielen!
-            #     Ass zu viert: Ass spielen!
-            #     https://jassverzeichnis.ch/jassen-trumpf-ass-ausspielen/
+                #     Ass zu dritt: Zweithöchste Karte spielen!
+                #     Ass zu viert: Ass spielen!
+                #     https://jassverzeichnis.ch/jassen-trumpf-ass-ausspielen/
                 if stronger_card.value not in [11, 14]:
-                    self.add_flag(DoesntHaveCardFlag(stronger_card), self.card_counter.partner_id)
-            return None
+                    self.add_flag(
+                        DoesntHaveCardFlag(stronger_card), self.card_counter.partner_id
+                    )
+            return
 
         # Partner opens with non-bock and non-trumpf card
         if not card_is_trumpf:
             self.partner_non_trumpf_opening(card)
-        return None
+        return
 
-
-    def update_partner_first_player_first_round_flag(self, card: Card, state: Status) -> None:
+    def update_partner_first_player_first_round_flag(
+        self, card: Card, state: Status
+    ) -> None:
         """Updates partner-related flags for the first round when the partner opens the stich.
 
         This function evaluates whether the game was geschoben and which card the partner used to open, and delegates to the corresponding helper to infer the partner's trumpf strength and distribution.
@@ -1604,9 +1900,6 @@ class TrumpfColorMode(Mode):
             self.update_partner_geschoben_flag(card)
         else:
             self.update_partner_vorhand_flag(card)
-
-        return None
-
 
     def update_partner_first_player_flag(self, card: Card, state: Status) -> None:
         """Updates inference flags based on the partner's opening play in later rounds.
@@ -1624,27 +1917,33 @@ class TrumpfColorMode(Mode):
         is_first_round: bool = self.card_counter.current_round() == 0
         if is_first_round:
             self.update_partner_first_player_first_round_flag(card, state)
-            return None
-        
+            return
+
         # Everything below is NOT the first round.
         # Partner opens with non-trumpf bock. We expect opponents to have no Trumpf cards left.
-        partner_is_leader: bool = self.card_counter.round_leader(state) == self.card_counter.partner_id
+        partner_is_leader: bool = (
+            self.card_counter.round_leader(state) == self.card_counter.partner_id
+        )
         card_is_trumpf: bool = self.is_trumpfcard(card)
         card_is_bock: bool = card == self.get_current_bock(card.suit)
-        condition = all([partner_is_leader,
-                         card_is_bock,
-                         not card_is_trumpf
-        ]) 
+        condition = all([partner_is_leader, card_is_bock, not card_is_trumpf])
         if condition:
             cards_by_suit = split_cards_by_suit(self.card_counter.unknown_cards())
-            suit_cards = flatten_matrix([x[1] for x in cards_by_suit if x[0].name == self.trumpf_name().name])
+            suit_cards = flatten_matrix(
+                [x[1] for x in cards_by_suit if x[0].name == self.trumpf_name().name]
+            )
             for trumpf_card in suit_cards:
-                self.add_flag(DoesntHaveCardFlag(trumpf_card), self.card_counter.opponent_1_id)
-                self.add_flag(DoesntHaveCardFlag(trumpf_card), self.card_counter.opponent_2_id)
-        return None
-    
+                self.add_flag(
+                    DoesntHaveCardFlag(trumpf_card), self.card_counter.opponent_1_id
+                )
+                self.add_flag(
+                    DoesntHaveCardFlag(trumpf_card), self.card_counter.opponent_2_id
+                )
+        return
 
-    def update_first_player_flags(self,player_id: int, card: Card, state: Status) -> None:
+    def update_first_player_flags(
+        self, player_id: int, card: Card, state: Status
+    ) -> None:
 
         # Add Suit "anziehen" Flag if a non-trumpf card is played.
         if not self.player_played_trumpf(player_id):
@@ -1653,9 +1952,6 @@ class TrumpfColorMode(Mode):
         # Partner is first player. Update his flags.
         if player_id == self.card_counter.partner_id:
             self.update_partner_first_player_flag(card, state)
-        
-        return None
-    
 
     def check_banner_hint(self, state: Status) -> bool:
         """Checks whether the banner-based trumpf count hint condition is met.
@@ -1669,7 +1965,9 @@ class TrumpfColorMode(Mode):
             bool: True if the banner hint condition is fulfilled, otherwise False.
         """
         first_card = from_string_to_card(state.stiche[0].played_cards[0].card)
-        partner_played_first_card = state.stiche[0].played_cards[0].player_id == self.card_counter.partner_id
+        partner_played_first_card = (
+            state.stiche[0].played_cards[0].player_id == self.card_counter.partner_id
+        )
         card_is_trumpf = first_card.suit == self.suit
         card_is_banner = first_card.value == 10
         is_geschoben = state.geschoben
@@ -1681,7 +1979,6 @@ class TrumpfColorMode(Mode):
                 partner_played_first_card,
             ]
         )
-
 
     def update_number_of_trumpf_flag(self, card: Card, state: Status) -> None:
         """Updates the inferred range of trumpf cards held by the partner.
@@ -1696,9 +1993,11 @@ class TrumpfColorMode(Mode):
             None
         """
         # Get Flag
-        number_of_trumpf = self.card_counter.get_number_of_trumpf_flag(self.card_counter.partner_id)
+        number_of_trumpf = self.card_counter.get_number_of_trumpf_flag(
+            self.card_counter.partner_id
+        )
         if is_empty_or_none(number_of_trumpf):
-            return None
+            return
         assert isinstance(number_of_trumpf, NumberOfTrumpfFlag)
 
         round_color = self.card_counter.get_round_color(state)
@@ -1711,23 +2010,24 @@ class TrumpfColorMode(Mode):
             card_is_trumpf = card.suit == self.suit
             if trumpf_round and not card_is_trumpf:
                 number_of_trumpf.max = number_of_trumpf.min
-            
+
             if trumpf_round and card_is_trumpf:
                 number_of_trumpf.min = number_of_trumpf.max
 
         # update flag
         if card.suit == self.suit:
-            number_of_trumpf.max = max(number_of_trumpf.max-1, 0)
-            number_of_trumpf.min = max(number_of_trumpf.min-1, 0)
-        
+            number_of_trumpf.max = max(number_of_trumpf.max - 1, 0)
+            number_of_trumpf.min = max(number_of_trumpf.min - 1, 0)
+
         if round_color == self.suit and card.suit != self.suit:
             number_of_trumpf.max = 0
             number_of_trumpf.min = 0
 
-        return None
-        
+        return
 
-    def update_non_first_player_flags(self, player_id: int, card: Card, state: Status) -> None:
+    def update_non_first_player_flags(
+        self, player_id: int, card: Card, state: Status
+    ) -> None:
         """Updates inference flags for non-leading players based on the card they played.
 
         This function marks when a player both fails to follow the round color and does not play trumpf, and for the partner additionally updates the inferred trumpf count based on their play.
@@ -1745,17 +2045,16 @@ class TrumpfColorMode(Mode):
         did_not_serve_suit: bool = round_color != card.suit
 
         if round_color is None:
-            raise ValueError # Round color should not be none, since there are already cards on the table!
+            raise ValueError(
+                "Round color should not be none, since there are already cards on the table!"
+            )
 
         if did_not_play_trumpf and did_not_serve_suit:
             self.add_flag(FailedToServeSuitFlag(round_color), player_id)
             self.add_flag(SuitVerworfenFlag(card.suit), player_id)
-        
+
         if player_id == self.card_counter.partner_id:
             self.update_number_of_trumpf_flag(card, state)
-
-        return None
-    
 
     def update_trumpf_distribution_estimation(self) -> None:
         """Refines the estimated distribution of remaining trumpf cards among opponents.
@@ -1769,17 +2068,18 @@ class TrumpfColorMode(Mode):
         opponent_1_id = self.card_counter.opponent_1_id
         opponent_2_id = self.card_counter.opponent_2_id
 
-        partner_number_of_trumpfs_flag = self.card_counter.get_number_of_trumpf_flag(partner_id)
+        partner_number_of_trumpfs_flag = self.card_counter.get_number_of_trumpf_flag(
+            partner_id
+        )
         if is_empty_or_none(partner_number_of_trumpfs_flag):
-            return None
-        
+            return
+
         remaining_trumpf = self.card_counter.remaining_by_suit(self.suit)
         if len(remaining_trumpf) == partner_number_of_trumpfs_flag.min:
             for trumpf_card in remaining_trumpf:
                 self.add_flag(DoesntHaveCardFlag(trumpf_card), opponent_1_id)
                 self.add_flag(DoesntHaveCardFlag(trumpf_card), opponent_2_id)
-        return None
-
+        return
 
     def update_flags(self, player_id: int, card: Card, state: Status) -> None:
         """Updates player flags based on the card played and the current game state.
@@ -1804,5 +2104,5 @@ class TrumpfColorMode(Mode):
 
         if current_stich_length == 4:
             self.update_flags_end_of_round(player_id, state)
-        
+
         self.update_trumpf_distribution_estimation()

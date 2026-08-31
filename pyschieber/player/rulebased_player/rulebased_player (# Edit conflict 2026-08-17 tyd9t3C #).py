@@ -145,7 +145,7 @@ class RuleBasedPlayer(BasePlayer):
         if len(status.table) != 0:
             return
 
-        assert self.id is not None
+        assert self.id
         partner_id: int = (self.id + 2) % 4
         opponent_1_id: int = (self.id + 1) % 4
         opponent_2_id: int = (self.id + 3) % 4
@@ -159,11 +159,12 @@ class RuleBasedPlayer(BasePlayer):
         if player_id == self.id and not status.geschoben:
             self.role = "Trumpf"
 
-        if player_id == partner_id and status.geschoben:
-            self.role = "Trumpf"
+        if player_id == partner_id:
+            if status.geschoben:
+                self.role = "Trumpf"
 
-        if player_id == partner_id and not status.geschoben:
-            self.role = "Partner"
+            if not status.geschoben:
+                self.role = "Partner"
 
     def role_setting_required(self, state: Status) -> bool:
         """Checks whether the player's role needs to be set for the current game state.

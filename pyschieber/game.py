@@ -3,21 +3,31 @@
 # ----------------------------
 
 import logging
-from typing import List, Dict, Tuple, Generator, TypedDict, Literal  # Required for Python < 3.9
-from pyschieber.helpers.typed_dict import TypedDictPlayer
-
 import random
+from collections.abc import Generator
+from typing import (  # Required for Python < 3.9
+    Literal,
+    TypedDict,
+)
+
 import numpy as np
 
-from pyschieber.team import Team
 from pyschieber.card import Card
 from pyschieber.dealer import Dealer
-from pyschieber.rules.stich_rules import stich_rules, card_allowed
-from pyschieber.rules.trumpf_rules import trumpf_allowed
+from pyschieber.helpers.typed_dict import TypedDictPlayer
 from pyschieber.rules.count_rules import count_stich, counting_factor
-from pyschieber.stich import stich_dict, played_cards_dict, Stich, PlayedCard, StichDict, PlayedCardsDict
+from pyschieber.rules.stich_rules import card_allowed, stich_rules
+from pyschieber.rules.trumpf_rules import trumpf_allowed
+from pyschieber.stich import (
+    PlayedCard,
+    PlayedCardsDict,
+    Stich,
+    StichDict,
+    played_cards_dict,
+    stich_dict,
+)
+from pyschieber.team import Team
 from pyschieber.trumpf import Trumpf
-
 
 logger = logging.getLogger(__name__)
 
@@ -28,12 +38,14 @@ logger = logging.getLogger(__name__)
 
 
 class StatusDict(TypedDict):
-    stiche: tuple[List[StichDict]]
-    trumpf: Literal['ROSE', 'BELL', 'ACORN', 'SHIELD', 'OBE_ABE', 'UNDE_UFE', 'SCHIEBEN']
+    stiche: tuple[list[StichDict]]
+    trumpf: Literal[
+        "ROSE", "BELL", "ACORN", "SHIELD", "OBE_ABE", "UNDE_UFE", "SCHIEBEN"
+    ]
     geschoben: tuple[bool]
     point_limit: tuple[float]
     table: tuple[list[PlayedCardsDict]]
-    teams: List[Dict[str, int]]
+    teams: list[dict[str, int]]
 
 
 # ----------------------------
@@ -42,12 +54,17 @@ class StatusDict(TypedDict):
 
 
 class Game:
-    def __init__(self, teams: List[Team], point_limit: float = 1500, use_counting_factor: bool = True) -> None:
+    def __init__(
+        self,
+        teams: list[Team],
+        point_limit: float = 1500,
+        use_counting_factor: bool = True,
+    ) -> None:
         """
         Initializes a new game with the given teams, point limit, and counting factor option.
 
         Sets up the players, dealer, and game state for a new round of play.
-        
+
         Args:
             teams (List[Team]): The teams participating in the game.
             point_limit (float, optional): The score required to win the game. Defaults to 1500.
@@ -55,16 +72,22 @@ class Game:
         """
         self.teams = teams
         self.point_limit = point_limit
-        self.players: List[TypedDictPlayer] = [teams[0].players[0], teams[1].players[0], teams[0].players[1], teams[1].players[1]]
+        self.players: list[TypedDictPlayer] = [
+            teams[0].players[0],
+            teams[1].players[0],
+            teams[0].players[1],
+            teams[1].players[1],
+        ]
         self.dealer: Dealer = Dealer(players=self.players)
         self.geschoben: bool = False
         self.trumpf: Trumpf | None = None
-        self.stiche: List[Stich] = []
-        self.cards_on_table: List[PlayedCard] = []
+        self.stiche: list[Stich] = []
+        self.cards_on_table: list[PlayedCard] = []
         self.use_counting_factor = use_counting_factor
-    
 
-    def prepare_deck(self, benchmark_enabled, benchmark_seed, start_player_index) -> None:
+    def prepare_deck(
+        self, benchmark_enabled, benchmark_seed, start_player_index
+    ) -> None:
         """
         Prepares and shuffles the deck for the game, optionally using benchmarking mode for reproducibility.
 
@@ -91,7 +114,6 @@ class Game:
             self.dealer.shuffle_cards()
             self.dealer.deal_cards_rotated()
             # self.dealer.show_deck()
-    
 
     def is_winner(self, whole_rounds: bool) -> bool:
         """Überprüft, ob ein Team die benötigte Siegpunktzahl erreicht.
@@ -103,13 +125,9 @@ class Game:
             bool: True = es gibt einen Gewinner.
         """
         return bool(
-            (
-            self.teams[0].won(self.point_limit)
-            or self.teams[1].won(self.point_limit)
-            )
+            (self.teams[0].won(self.point_limit) or self.teams[1].won(self.point_limit))
             and not whole_rounds
         )
-    
 
     def check_for_matsch(self, matsch_counter) -> None:
         """
@@ -128,12 +146,15 @@ class Game:
         """
         if self.trumpf is None:
             raise ValueError("trumpf must not be None.")
-        if matsch_counter[0,0] == 9:
-            self.teams[0].points += 100 * counting_factor[self.trumpf] if self.use_counting_factor else 100
-        
-        elif matsch_counter[0,1] == 9:
-            self.teams[1].points += 100 * counting_factor[self.trumpf] if self.use_counting_factor else 100
+        if matsch_counter[0, 0] == 9:
+            self.teams[0].points += (
+                100 * counting_factor[self.trumpf] if self.use_counting_factor else 100
+            )
 
+        elif matsch_counter[0, 1] == 9:
+            self.teams[1].points += (
+                100 * counting_factor[self.trumpf] if self.use_counting_factor else 100
+            )
 
     def define_trumpf(self, start_player_index: int) -> None:
         """
@@ -148,18 +169,23 @@ class Game:
             None
         """
         is_allowed_trumpf: bool = False
-        generator: Generator[Trumpf] = self.players[start_player_index].choose_trumpf(geschoben=self.geschoben)
+        generator: Generator[Trumpf] = self.players[start_player_index].choose_trumpf(
+            geschoben=self.geschoben
+        )
         chosen_trumpf: Trumpf = next(generator)
         if chosen_trumpf == Trumpf.SCHIEBEN:
             self.geschoben = True
-            generator = self.players[(start_player_index + 2) % 4].choose_trumpf(geschoben=self.geschoben)
+            generator = self.players[(start_player_index + 2) % 4].choose_trumpf(
+                geschoben=self.geschoben
+            )
             chosen_trumpf = next(generator)
             while not is_allowed_trumpf:
-                is_allowed_trumpf = trumpf_allowed(chosen_trumpf=chosen_trumpf, geschoben=self.geschoben)
+                is_allowed_trumpf = trumpf_allowed(
+                    chosen_trumpf=chosen_trumpf, geschoben=self.geschoben
+                )
                 trumpf = generator.send(is_allowed_trumpf)
                 chosen_trumpf = chosen_trumpf if trumpf is None else trumpf
         self.trumpf = chosen_trumpf
-
 
     def get_status(self) -> StatusDict:
         """
@@ -175,13 +201,18 @@ class Game:
         """
         if self.trumpf is None:
             raise ValueError("trumpf must not be None.")
-        return dict(stiche=[stich_dict(stich) for stich in self.stiche], trumpf=self.trumpf.name,
-                    geschoben=self.geschoben, point_limit=self.point_limit,
-                    table=[played_cards_dict(played_card) for played_card in self.cards_on_table],
-                    teams=[dict(points=team.points) for team in self.teams])
-    
+        return dict(
+            stiche=[stich_dict(stich) for stich in self.stiche],
+            trumpf=self.trumpf.name,
+            geschoben=self.geschoben,
+            point_limit=self.point_limit,
+            table=[
+                played_cards_dict(played_card) for played_card in self.cards_on_table
+            ],
+            teams=[dict(points=team.points) for team in self.teams],
+        )
 
-    def play_card(self, table_cards: List[PlayedCard], player: TypedDictPlayer) -> Card:
+    def play_card(self, table_cards: list[PlayedCard], player: TypedDictPlayer) -> Card:
         """
         Handles the process of a player choosing and playing a card for the current trick.
 
@@ -194,21 +225,23 @@ class Game:
         Returns:
             Card: The card that was played by the player.
         """
-        cards: List[Card] = [played_card.card for played_card in table_cards]
+        cards: list[Card] = [played_card.card for played_card in table_cards]
         is_allowed_card: bool = False
         generator: Generator[Card] = player.choose_card(state=self.get_status())
         chosen_card: Card = next(generator)
         while not is_allowed_card:
-            is_allowed_card = card_allowed(table_cards=cards, chosen_card=chosen_card, hand_cards=player.cards,
-                                           trumpf=self.trumpf)
+            is_allowed_card = card_allowed(
+                table_cards=cards,
+                chosen_card=chosen_card,
+                hand_cards=player.cards,
+                trumpf=self.trumpf,
+            )
             card = generator.send(is_allowed_card)
             chosen_card = chosen_card if card is None else card
-        else:
-            logger.info('Table: {0}:{1}'.format(player, chosen_card))
-            player.cards.remove(chosen_card)
+        logger.info(f"Table: {player}:{chosen_card}")
+        player.cards.remove(chosen_card)
 
         return chosen_card
-
 
     def play_stich(self, start_player_index: int) -> Stich:
         """
@@ -223,18 +256,23 @@ class Game:
             Stich: The completed trick with all played cards and the winner.
         """
         self.cards_on_table = []
-        first_card: Card = self.play_card(table_cards=self.cards_on_table, player=self.players[start_player_index])
+        first_card: Card = self.play_card(
+            table_cards=self.cards_on_table, player=self.players[start_player_index]
+        )
         self.move_made(self.players[start_player_index].id, first_card)
-        self.cards_on_table = [PlayedCard(player=self.players[start_player_index], card=first_card)]
+        self.cards_on_table = [
+            PlayedCard(player=self.players[start_player_index], card=first_card)
+        ]
         for i in get_player_index(start_index=start_player_index):
             current_player: TypedDictPlayer = self.players[i]
-            card = self.play_card(table_cards=self.cards_on_table, player=current_player)
+            card = self.play_card(
+                table_cards=self.cards_on_table, player=current_player
+            )
             self.move_made(current_player.id, card)
             self.cards_on_table.append(PlayedCard(player=current_player, card=card))
         assert self.trumpf is not None
         stich: Stich = stich_rules[self.trumpf](played_cards=self.cards_on_table)
         return stich
-
 
     def move_made(self, player_id: int | None, card: Card) -> None:
         """
@@ -253,7 +291,6 @@ class Game:
         for player in self.players:
             player.move_made(player_id, card, self.get_status())
 
-
     def stich_over_information(self) -> None:
         """
         Notifies all players that the current trick (stich) is over.
@@ -261,7 +298,6 @@ class Game:
         Calls the stich_over method on each player, passing the current game status as state.
         """
         [player.stich_over(state=self.get_status()) for player in self.players]
-
 
     def count_points(self, stich, last) -> None:
         """
@@ -277,11 +313,10 @@ class Game:
             None
         """
         stich_player_index: int = self.players.index(stich.player)
-        cards: List[Card] = [played_card.card for played_card in stich.played_cards]
+        cards: list[Card] = [played_card.card for played_card in stich.played_cards]
         self.add_points(team_index=(stich_player_index % 2), cards=cards, last=last)
 
-
-    def add_points(self, team_index: int, cards: List[Card], last: bool) -> None:
+    def add_points(self, team_index: int, cards: list[Card], last: bool) -> None:
         """
         Adds points to the specified team based on the cards played in a trick.
 
@@ -296,9 +331,12 @@ class Game:
             None
         """
         points = count_stich(cards, self.trumpf, last=last)
-        points = points * counting_factor[self.trumpf] if self.use_counting_factor else points
+        points = (
+            points * counting_factor[self.trumpf]
+            if self.use_counting_factor
+            else points
+        )
         self.teams[team_index].points += points
- 
 
     def reset_point(self) -> None:
         """
@@ -308,8 +346,14 @@ class Game:
         """
         [team.reset_points() for team in self.teams]
 
-
-    def play(self, start_player_index: int = 0, whole_rounds: bool = False, allow_weis: bool = True, benchmark_enabled: bool = False, benchmark_seed: float = 0) -> bool:
+    def play(
+        self,
+        start_player_index: int = 0,
+        whole_rounds: bool = False,
+        allow_weis: bool = True,
+        benchmark_enabled: bool = False,
+        benchmark_seed: float = 0,
+    ) -> bool:
         """
         Plays a full round of the game, handling deck preparation, trump selection, and stich rounds.
 
@@ -330,28 +374,28 @@ class Game:
 
         # Spieler auffordern, Trumpf zu bestimmen.
         self.define_trumpf(start_player_index=start_player_index)
-        logger.info('Chosen Trumpf: {0} \n'.format(self.trumpf.name))
-        
+        logger.info(f"Chosen Trumpf: {self.trumpf.name} \n")
+
         # Matsch zurücksetzen
-        matsch_counter = np.zeros((1,2))
+        matsch_counter = np.zeros((1, 2))
 
         # Spielrunde durchführen
         for i in range(9):
             stich: Stich = self.play_stich(start_player_index)
             self.count_points(stich, last=(i == 8))
-            logger.info('\nStich: {0} \n'.format(stich.player))
+            logger.info(f"\nStich: {stich.player} \n")
             logger.info(f"{'-' * 180}{self.trumpf}\n")
             start_player_index = self.players.index(stich.player)
             self.stiche.append(stich)
             self.stich_over_information()
-            matsch_counter[0,stich.player.id % 2] += 1
+            matsch_counter[0, stich.player.id % 2] += 1
             if self.is_winner(whole_rounds):
                 return True
-        
+
         # Auf Matsch prüfen
         self.check_for_matsch(matsch_counter)
         return bool(self.is_winner(whole_rounds))
-    
+
 
 def get_player_index(start_index: int) -> Generator[int, None, None]:
     """
@@ -370,8 +414,8 @@ def get_player_index(start_index: int) -> Generator[int, None, None]:
 
 
 def main() -> None:
-    print('This file cannot be run by itself.')
-   
+    print("This file cannot be run by itself.")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
