@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Setup PySchieber",
+            "type": "process",
+            "command": "py",
+            "args": [
+                "-3.12",
+                "${workspaceFolder}/scripts/setup_environment.py"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}

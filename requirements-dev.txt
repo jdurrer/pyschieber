@@ -1,9 +1,1 @@
-ruff
-mypy
-pytest
-pytest-cov
-pytest-testmon
-build
-twine
-bandit
-pip-audit
+-e .[dev]

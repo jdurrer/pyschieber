@@ -1,6 +1,6 @@
 import pytest
 
-from pyschieber.player.treePlayer.helpers.helperfunctions import (
+from pyschieber.player.rulebased_player.helpers.helperfunctions import (
     flatten_matrix,
     is_empty_or_none,
 )

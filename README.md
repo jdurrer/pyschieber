@@ -11,6 +11,22 @@ Pyschieber aims to offer an API in the same manner.
 ## Usage
 Download repo and install.
 
+### Development setup
+
+After cloning the repository, open its root folder in VS Code and press `F5`.
+The pre-launch task creates `.venv` when needed, installs the development
+dependencies, and installs PySchieber in editable mode. Select `.venv` as the
+Python interpreter if VS Code does not select it automatically.
+
+To set up the environment from a terminal instead:
+
+```powershell
+py -3.12 scripts/setup_environment.py
+```
+
+The equivalent command works on macOS and Linux when `python3` is used in
+place of `py -3.12`.
+
 After the pip installation you could run the ```pyschieber``` command on the console to play a game:
 ```bash
 $ pyschieber

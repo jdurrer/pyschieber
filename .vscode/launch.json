@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run PySchieber",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pyschieber.main",
+            "python": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "Setup PySchieber",
+            "justMyCode": true
+        }
+    ]
+}

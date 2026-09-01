@@ -1,16 +1,14 @@
-from typing import List
-
 import pytest
 
-from pyschieber.player.treePlayer.helpers.state_dict_to_dataclass import (
+from pyschieber.game import StatusDict
+from pyschieber.player.rulebased_player.helpers.state_dict_to_dataclass import (
     PlayedCardsDataclass,
+    Status,
     StichDataclass,
     Teamscore,
-    Status,
-    translate_get_status_to_dataclass,
     test_dict_translation,
+    translate_get_status_to_dataclass,
 )
-from pyschieber.game import StatusDict
 
 
 @pytest.fixture
@@ -48,7 +46,9 @@ def state() -> StatusDict:
     }
 
 
-def test_translate_get_status_to_dataclass_structure_and_types(state: StatusDict) -> None:
+def test_translate_get_status_to_dataclass_structure_and_types(
+    state: StatusDict,
+) -> None:
     status = translate_get_status_to_dataclass(state)
 
     assert isinstance(status, Status)
@@ -78,7 +78,9 @@ def test_translate_get_status_to_dataclass_values_match(state: StatusDict) -> No
         assert stich_status.player_id == stich_state["player_id"]
         assert stich_status.trumpf == stich_state["trumpf"]
         assert len(stich_status.played_cards) == len(stich_state["played_cards"])
-        for pc_state, pc_status in zip(stich_state["played_cards"], stich_status.played_cards):
+        for pc_state, pc_status in zip(
+            stich_state["played_cards"], stich_status.played_cards
+        ):
             assert pc_status.player_id == pc_state["player_id"]
             assert pc_status.card == pc_state["card"]
 
