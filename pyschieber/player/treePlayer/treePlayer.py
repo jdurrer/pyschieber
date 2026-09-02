@@ -11,6 +11,9 @@ from pyschieber.player.rulebased_player.helpers.state_dict_to_dataclass import (
     translate_get_status_to_dataclass,
 )
 from pyschieber.player.rulebased_player.rulebased_player import RuleBasedPlayer
+from pyschieber.player.treePlayer.treesearch.ismcts.cpmpy_csp import (
+    calculate_upper_world_boundary,
+)
 from pyschieber.player.treePlayer.treesearch.ismcts.evaluator import (
     RandomRolloutEvaluator,
 )
@@ -24,6 +27,23 @@ from pyschieber.player.treePlayer.treesearch.ismcts.ismcts import ISMCTSBot
 
 
 class TreePlayer(RuleBasedPlayer):
+    def get_card_by_treesearch(self, status: Status) -> Card:
+        evaluator = RandomRolloutEvaluator()
+        informationset = initialize_card_distribution(self)
+        upper_bound_informationset = min(
+            200, calculate_upper_world_boundary(informationset)
+        )
+        informationset.set_hamming_distance(int(200 / upper_bound_informationset))
+        ismcts = ISMCTSBot(
+            evaluator,
+            2000,
+            informationset,
+            max_world_samples=upper_bound_informationset,
+        )
+        game_state = rebuild_game(self, status)
+        policy = ismcts.get_policy(game_state)
+        return max(policy, key=itemgetter(1))[0]
+
     def choose_card(  # type: ignore
         self,
         state: StatusDict = None,  # type: ignore
@@ -52,14 +72,7 @@ class TreePlayer(RuleBasedPlayer):
             card = self.strategy.choose_card(cards, state)
 
             if not isinstance(card, Card) and len(self.cards) <= 3:
-                evaluator = RandomRolloutEvaluator()
-                informationset = initialize_card_distribution(self)
-                ismcts = ISMCTSBot(
-                    evaluator, 300, informationset
-                )  # TODO  change the max_simulations of ISMCTSBot. make it dynamic based on how many cards are left?
-                game_state = rebuild_game(self, status)
-                policy = ismcts.get_policy(game_state)
-                card = max(policy, key=itemgetter(1))[0]
+                card = self.get_card_by_treesearch(status)
 
             if not isinstance(card, Card):
                 card = random.choice(cards)

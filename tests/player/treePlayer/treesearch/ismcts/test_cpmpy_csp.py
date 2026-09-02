@@ -2,6 +2,7 @@ import pytest
 
 from pyschieber.player.treePlayer.treesearch.ismcts.cpmpy_csp import (
     CardDistributionSolver,
+    calculate_upper_world_boundary,
     main,
 )
 
@@ -50,7 +51,7 @@ def test_solve_iter_returns_feasible_diverse_solution() -> None:
     possible_players_holding_card = [[1, 1], [1, 1], [1, 1], [1, 1]]
     solver = CardDistributionSolver(hand_card_lengths, possible_players_holding_card)
 
-    solution = solver.solve_iter(hamming_distance_candidates=1)
+    solution = solver.solve_iter()
     assert solution  # non-empty list
 
     # Each card assignment must be allowed by its possibility mask.
@@ -70,13 +71,23 @@ def test_solve_iter_returns_solution_for_a_fresh_solver() -> None:
     possible_players_holding_card = [[1, 1], [1, 1]]
     solver = CardDistributionSolver(hand_card_lengths, possible_players_holding_card)
 
-    solution = solver.solve_iter(hamming_distance_candidates=1)
+    solution = solver.solve_iter()
 
     assert solution
     counts = [
         solution.count(player_idx) for player_idx in range(len(hand_card_lengths))
     ]
     assert counts == hand_card_lengths
+
+
+def test_calculate_upper_world_boundary_uses_candidate_counts() -> None:
+    """Calculate the product of candidate counts, treating empty rows as one."""
+    solver = CardDistributionSolver(
+        hand_card_lengths=[1, 1],
+        possible_players_holding_card=[[1, 1], [1, 1], [0, 0]],
+    )
+
+    assert calculate_upper_world_boundary(solver) == 4
 
 
 def test_main_does_not_raise() -> None:

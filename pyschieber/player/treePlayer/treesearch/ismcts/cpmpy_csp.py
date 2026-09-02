@@ -7,6 +7,7 @@ PyPI: https://pypi.org/project/cpmpy/
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING
 
 import cpmpy as cp
@@ -46,6 +47,7 @@ class CardDistributionSolver:
         self.possible_players_holding_card = possible_players_holding_card
         self.number_of_players = len(hand_card_lengths)
         self.number_of_cards = len(possible_players_holding_card)
+        self._hamming_distance: int = 1
         # The extra value represents cards that have already been played.
         self.cards: NDVarArray = cp.intvar(
             0, self.number_of_players, shape=self.number_of_cards
@@ -60,7 +62,7 @@ class CardDistributionSolver:
         This method restricts each card variable to its candidate players and adds a
         global cardinality constraint to enforce the configured hand sizes.
         """
-        for card, flags in zip(self.cards, self.possible_players_holding_card):
+        for card, flags in zip(self.cards, self.possible_players_holding_card):  # noqa: B905
             if len(flags) != self.number_of_players or any(
                 flag not in (0, 1) for flag in flags
             ):
@@ -82,9 +84,15 @@ class CardDistributionSolver:
 
         self.solver = cp.SolverLookup.get("ortools", self.model)
 
-    def solve_iter(
-        self, hamming_distance_candidates: int = 1, already_reset_solver: bool = False
-    ) -> list[int]:
+    def set_hamming_distance(self, distance: int) -> None:
+        """Set the hamming distance
+
+        Args:
+            distance (int): _description_
+        """
+        self._hamming_distance = distance
+
+    def solve_iter(self, already_reset_solver: bool = False) -> list[int]:
         """Search for a card distribution that is maximally different from sampled solutions.
 
         This method first collects a limited number of feasible card distributions and
@@ -101,7 +109,7 @@ class CardDistributionSolver:
             [0, 1, 2, 3] -> First card given to player 0, second card to player 1, etc.
         """
         candidates: list[list[int]] = []
-        while len(candidates) < hamming_distance_candidates and self.solver.solve():  # type: ignore
+        while len(candidates) < self._hamming_distance and self.solver.solve():  # type: ignore
             candidates.append([int(value) for value in self.cards.value()])
 
         assert candidates
@@ -116,12 +124,31 @@ class CardDistributionSolver:
         if not already_reset_solver:
             self._initialize_problem()  # Reset the model to its original state
             return self.solve_iter(
-                hamming_distance_candidates, already_reset_solver=True
+                already_reset_solver=True
             )  # Retry the process recursively
         raise ValueError(
             "No solution found even after resetting the model. "
             "Please check the constraints and input parameters."
         )
+
+
+def calculate_upper_world_boundary(csp: CardDistributionSolver) -> int:
+    """Calculate the maximum possible worlds (information states) as an upper bound.
+    Because CSPs become harder to solve for large problems and we cannot
+    cheaply compute the exact number of worlds, a conservative approach is taken.
+    This shall estimate the number of possible information states.
+
+    Args:
+        csp (CardDistributionSolver): CSP problem.
+
+    Returns:
+        int: upper bound of possible worlds.
+    """
+    factors = list(map(sum, csp.possible_players_holding_card))
+    factors = [
+        1 if x == 0 else x for x in factors
+    ]  # Replace any zero factors with 1 to avoid multiplication by zero
+    return math.prod(factors)  # type: ignore
 
 
 def main() -> None:  # sourcery skip: use-named-expression
@@ -131,12 +158,14 @@ def main() -> None:  # sourcery skip: use-named-expression
         possible_players_holding_card=[[0, 1], [1, 1], [1, 1], [1, 0]],
     )
 
-    status = solver.solve_iter(hamming_distance_candidates=3)
+    status = solver.solve_iter()
     if status:
         # Extract the optimized card distribution: card_idx -> player_idx
         solution = [int(card.value()) for card in solver.cards]
         card_to_player = dict(enumerate(solution))
         print(card_to_player)
+
+    print("Upper world boundary:", calculate_upper_world_boundary(solver))
 
 
 if __name__ == "__main__":

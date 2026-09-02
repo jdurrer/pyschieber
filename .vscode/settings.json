@@ -3,5 +3,6 @@
     "python-envs.defaultEnvManager": "ms-python.python:system",
     "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
     "python.terminal.activateEnvironment": true,
-    "json.schemas": []
+    "json.schemas": [],
+    "github.copilot.editor.enableAutoCompletions": false
 }

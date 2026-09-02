@@ -116,36 +116,5 @@ def flip_ones_and_zeros_in_2d_list(input_list: list[list[int]]) -> list[list[int
     return [[1 - x for x in sublist] for sublist in input_list]
 
 
-# def combinations_without_repetition(n: int, k: int) -> int:
-#     """Calculates all Combinations without Repetition.
-#         0 < k < n
-
-#     Args:
-#         n (int): all remaining objects (i.e. cards)
-#         k (int): number of objects drawn (i.e. random handcards drawn)
-
-#     Returns:
-#         int: number of combinations without repetition
-#     """
-#     return int(factorial(n)/(factorial(n-k) * factorial(k)))
-
-
-# def calculate_combinations(number_of_cards_per_player) -> int:
-#     """Calculates the total number of combinations without repetition for
-#     given Number of Cards per player and Unicate Cards per player.
-
-#     Args:
-#         number_of_cards_per_player (np.array): 3*[4x9] array containing all possible player handcards without unicates
-
-#     Returns:
-#         int: Total Number of card distributions that are possible in the given state.
-#     """
-#     remaining_cards = np.sum(number_of_cards_per_player)
-#     factor1 = int(combinations_without_repetition(remaining_cards, number_of_cards_per_player[0]))
-#     remaining_cards = remaining_cards - np.sum(number_of_cards_per_player[0])
-#     factor2 = int(combinations_without_repetition(remaining_cards, number_of_cards_per_player[1]))
-#     return factor1 * factor2
-
-
 if __name__ == "__main__":
     print("This script is not executable.")
