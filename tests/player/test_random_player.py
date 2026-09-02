@@ -1,6 +1,7 @@
-import pytest
+from math import floor, sqrt
 from timeit import default_timer as timer
-from math import sqrt, floor
+
+import pytest
 
 from pyschieber.player.random_player import RandomPlayer
 from pyschieber.tournament import Tournament
@@ -10,7 +11,9 @@ from pyschieber.tournament import Tournament
 def test_is_random():
     point_limit = 1000
     number_of_tournaments = 1000
-    mean = number_of_tournaments * 0.5  # assume that a RandomPlayer has a 50% chance to win
+    mean = (
+        number_of_tournaments * 0.5
+    )  # assume that a RandomPlayer has a 50% chance to win
     variance = mean * (1 - 0.5)
     standard_deviation = int(floor(sqrt(variance)))
 
@@ -31,7 +34,9 @@ def test_is_random():
             team_2_won += 1
 
     end = timer()
-    print("\nTo run {0} tournaments it took {1:.2f} seconds.".format(number_of_tournaments, end - start))
+    print(
+        f"\nTo run {number_of_tournaments} tournaments it took {end - start:.2f} seconds."
+    )
 
     difference = abs(team_1_won - team_2_won)
     print("Difference: ", difference)

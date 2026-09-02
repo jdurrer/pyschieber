@@ -9,11 +9,12 @@ from itertools import combinations
 from time import time
 
 import numpy as np
-from pyschieber.card import Card, from_string_to_card
-from pyschieber.player.base_player import BasePlayer
 from pyschieber.player.treePlayer.strategy.flags.flags import (
     FailedToServeSuitFlag,
 )
+
+from pyschieber.card import Card, from_string_to_card
+from pyschieber.player.base_player import BasePlayer
 from pyschieber.player.treePlayer.treesearch.transpositionTable import (
     TranspositionTable,
 )
@@ -64,8 +65,8 @@ class TreeSearch:
         self.get_roles()
         cards = self.player.allowed_cards(state=self.rootstate)
         cards = self.order_cards_by_strength(cards)
-        score = {i: 0 for i in range(len(cards))}
-        n_iterations = {i: 0 for i in range(len(cards))}
+        score = dict.fromkeys(range(len(cards)), 0)
+        n_iterations = dict.fromkeys(range(len(cards)), 0)
         NumberOfCardsPerPlayer, UnicatesPerPlayer, CardsToDistributeBitwise = (
             self.get_Handsize_and_Unicates_Bitwise()
         )
@@ -120,9 +121,11 @@ class TreeSearch:
                     if value.count(card):
                         value.remove(card)
             # check if opponent 1 still has enough available cards to choose from.
-            if len(CardsToDistribute_deepcopy[self.cc.opponent_1_id]) < int(
-                NumberOfCardsPerPlayer[self.cc.opponent_1_id]
-            ) or 0 > int(NumberOfCardsPerPlayer[self.cc.opponent_1_id]):
+            if (
+                len(CardsToDistribute_deepcopy[self.cc.opponent_1_id])
+                < int(NumberOfCardsPerPlayer[self.cc.opponent_1_id])
+                or int(NumberOfCardsPerPlayer[self.cc.opponent_1_id]) < 0
+            ):
                 continue
             # Create Generator of Opponent_1 Handcards and iterate over them.
             Opponent1CardsIterator = combinations(
@@ -145,9 +148,11 @@ class TreeSearch:
                         CardsToDistribute_deep2copy[self.cc.opponent_2_id].remove(card)
 
                 # check if opponent 2 still has enough available cards to choose from.
-                if len(CardsToDistribute_deep2copy[self.cc.opponent_2_id]) < int(
-                    NumberOfCardsPerPlayer[self.cc.opponent_2_id]
-                ) or 0 > int(NumberOfCardsPerPlayer[self.cc.opponent_2_id]):
+                if (
+                    len(CardsToDistribute_deep2copy[self.cc.opponent_2_id])
+                    < int(NumberOfCardsPerPlayer[self.cc.opponent_2_id])
+                    or int(NumberOfCardsPerPlayer[self.cc.opponent_2_id]) < 0
+                ):
                     continue
                 npc_cards_deep2copy[self.cc.opponent_2_id] = (
                     CardsToDistribute_deep2copy[self.cc.opponent_2_id]

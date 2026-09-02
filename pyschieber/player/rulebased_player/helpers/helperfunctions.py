@@ -1,6 +1,7 @@
-from typing import Any, List
+from typing import Any
 
-def flatten_matrix(matrix: List[List[Any]]) -> List[Any]:
+
+def flatten_matrix(matrix: list[list[Any]]) -> list[Any]:
     """Flattens a two-dimensional list into a single list.
 
     This function takes a matrix (list of lists) and returns a flat list containing all elements in row-major order.

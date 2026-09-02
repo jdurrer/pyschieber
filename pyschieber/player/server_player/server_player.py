@@ -2,13 +2,16 @@ import json
 import logging
 from enum import Enum
 
-from pyschieber.player.server_player.helpers.parser.game_type_parser import pyschieber_trumpf_to_game_type, \
-    game_type_to_pyschieber_trumpf
-
 from pyschieber.player.server_player.helpers import messages
 from pyschieber.player.server_player.helpers.messages import MessageType
-from pyschieber.player.server_player.helpers.parser.card_parser import pyscheiber_card_to_challenge_card, \
-    challenge_card_to_pyschieber_card
+from pyschieber.player.server_player.helpers.parser.card_parser import (
+    challenge_card_to_pyschieber_card,
+    pyscheiber_card_to_challenge_card,
+)
+from pyschieber.player.server_player.helpers.parser.game_type_parser import (
+    game_type_to_pyschieber_trumpf,
+    pyschieber_trumpf_to_game_type,
+)
 from pyschieber.player.server_player.helpers.server_cards import ServerCard
 from pyschieber.player.server_player.helpers.web_socket_handler import WebSocketHandler
 from pyschieber.rules.stich_rules import card_allowed
@@ -16,11 +19,18 @@ from pyschieber.rules.trumpf_rules import trumpf_allowed
 
 logger = logging.getLogger(__name__)
 
-SessionType = Enum('SessionType', ['TOURNAMENT', 'SINGLE_GAME'])
+SessionType = Enum("SessionType", ["TOURNAMENT", "SINGLE_GAME"])
 
 
 class ServerPlayer:
-    def __init__(self, pyschieber_bot, session_name, server_address, chosen_team_index=0, max_games=-1):
+    def __init__(
+        self,
+        pyschieber_bot,
+        session_name,
+        server_address,
+        chosen_team_index=0,
+        max_games=-1,
+    ):
         self.pyschieber_bot = pyschieber_bot
         self.name = pyschieber_bot.name
         self.session_name = session_name
@@ -47,7 +57,7 @@ class ServerPlayer:
         self.websocket_handler = WebSocketHandler(bot=self, address=server_address)
 
     def start(self):
-        logger.info("Connecting to {}".format(self.server_address))
+        logger.info(f"Connecting to {self.server_address}")
         self.websocket_handler.start()
 
     def handle_message(self, message):
@@ -64,17 +74,19 @@ class ServerPlayer:
             data = {}
 
         if message_type == MessageType.REQUEST_PLAYER_NAME:
-            logger.info('MyName: ' + self.name)
+            logger.info("MyName: " + self.name)
             answer = messages.create(MessageType.CHOOSE_PLAYER_NAME, self.name)
 
         elif message_type == MessageType.REQUEST_SESSION_CHOICE:
-            answer = messages.create(MessageType.CHOOSE_SESSION,
-                                     "JOIN_EXISTING",
-                                     self.session_name,
-                                     SessionType.SINGLE_GAME.name,
-                                     False,
-                                     self.chosen_team_index)
-            logger.info('session choice answer: %s', answer)
+            answer = messages.create(
+                MessageType.CHOOSE_SESSION,
+                "JOIN_EXISTING",
+                self.session_name,
+                SessionType.SINGLE_GAME.name,
+                False,
+                self.chosen_team_index,
+            )
+            logger.info("session choice answer: %s", answer)
 
         elif message_type == MessageType.DEAL_CARDS:
             self.last_round_points = 0
@@ -123,14 +135,15 @@ class ServerPlayer:
             else:
                 round_points = 0
             self.last_round_points = current_game_points
-            self.table = self.table_to_pyschieber_played_cards(data['playedCards'])
+            self.table = self.table_to_pyschieber_played_cards(data["playedCards"])
             self.handle_stich(winner, round_points, total_points)
-            for i, score in enumerate(data['score']):
+            for i, score in enumerate(data["score"]):
                 self.points[i] = score.total_points
 
-        elif message_type == MessageType.BROADCAST_TOURNAMENT_STARTED:
-            pass
-        elif message_type == MessageType.BROADCAST_TOURNAMENT_RANKING_TABLE:
+        elif (
+            message_type == MessageType.BROADCAST_TOURNAMENT_STARTED
+            or message_type == MessageType.BROADCAST_TOURNAMENT_RANKING_TABLE
+        ):
             pass
         elif message_type == MessageType.BROADCAST_TEAMS:
             self.teams = data
@@ -147,7 +160,9 @@ class ServerPlayer:
             self.count_games += 1
             print(data)
         else:
-            logger.warning("Sorry, i cannot handle this message: " + json.dumps(message))
+            logger.warning(
+                "Sorry, i cannot handle this message: " + json.dumps(message)
+            )
         return answer
 
     def clear_at_init(self):
@@ -171,7 +186,9 @@ class ServerPlayer:
         return pyschieber_trumpf_to_game_type(chosen_trumpf)
 
     def handle_trumpf(self, game_type):
-        self.geschoben = game_type.mode == "SCHIEBE"  # just remember if it's a geschoben match
+        self.geschoben = (
+            game_type.mode == "SCHIEBE"
+        )  # just remember if it's a geschoben match
         self.game_type = game_type
 
     def handle_stich(self, winner, round_points, total_points):
@@ -188,7 +205,7 @@ class ServerPlayer:
 
     def handle_reject_card(self, data):
         logger.warning(" ######   SERVER REJECTED CARD   #######")
-        logger.warning("Player: {}".format(self.pyschieber_bot.name))
+        logger.warning(f"Player: {self.pyschieber_bot.name}")
         logger.warning("Rejected card: %s", data)
         logger.warning("Hand cards pyschieber: %s", self.pyschieber_bot.cards)
         logger.warning("Hand cards: %s", self.hand_cards)
@@ -202,7 +219,9 @@ class ServerPlayer:
         allowed = False
         while not allowed:
             chosen_card = next(generator)
-            allowed = self.is_card_allowed(choosen_card=chosen_card, table_cards_dict=table_cards)
+            allowed = self.is_card_allowed(
+                choosen_card=chosen_card, table_cards_dict=table_cards
+            )
             generator.send(allowed)
         card = pyscheiber_card_to_challenge_card(chosen_card)
         self.chosen_card = chosen_card
@@ -226,17 +245,24 @@ class ServerPlayer:
     def update_hand(self, played_cards):
         last_played_card = played_cards[-1]
         for i in range(len(self.hand_cards)):
-            if last_played_card.number == self.hand_cards[i].number \
-                    and last_played_card.color == self.hand_cards[i].color:
+            if (
+                last_played_card.number == self.hand_cards[i].number
+                and last_played_card.color == self.hand_cards[i].color
+            ):
                 self.hand_cards.pop(i)
                 self.pyschieber_bot.cards.remove(self.chosen_card)
                 break
 
     def pyschieber_state(self):
         trumpf = game_type_to_pyschieber_trumpf(self.game_type)
-        state = {'trumpf': trumpf.name, 'geschoben': self.geschoben,
-                 'teams': [{'points': self.points[0]}, {'points': self.points[1]}],
-                 'table': self.table, 'point_limit': 2500, 'stiche': self.stiche}
+        state = {
+            "trumpf": trumpf.name,
+            "geschoben": self.geschoben,
+            "teams": [{"points": self.points[0]}, {"points": self.points[1]}],
+            "table": self.table,
+            "point_limit": 2500,
+            "stiche": self.stiche,
+        }
         return state
 
     def table_to_pyschieber_played_cards(self, table_cards_dict):
@@ -245,21 +271,31 @@ class ServerPlayer:
             if isinstance(table_cards_dict[0], ServerCard):
                 table_cards = table_cards_dict
             else:
-                table_cards = [ServerCard(number=card['number'], color=card['color']) for card in table_cards_dict]
+                table_cards = [
+                    ServerCard(number=card["number"], color=card["color"])
+                    for card in table_cards_dict
+                ]
         table = [challenge_card_to_pyschieber_card(card) for card in table_cards]
         first_player_id = (self.pyschieber_bot.id - len(table)) % 4
         played_cards = []
         for card in table:
-            played_cards.append({'player_id': first_player_id, 'card': str(card)})
+            played_cards.append({"player_id": first_player_id, "card": str(card)})
             first_player_id = (first_player_id + 1) % 4
         return played_cards
 
     def is_card_allowed(self, choosen_card, table_cards_dict):
-        table_cards = [ServerCard(number=card['number'], color=card['color']) for card in table_cards_dict]
+        table_cards = [
+            ServerCard(number=card["number"], color=card["color"])
+            for card in table_cards_dict
+        ]
         table = [challenge_card_to_pyschieber_card(card) for card in table_cards]
         trumpf = game_type_to_pyschieber_trumpf(self.game_type)
-        return card_allowed(table_cards=table, chosen_card=choosen_card, hand_cards=self.pyschieber_bot.cards,
-                            trumpf=trumpf)
+        return card_allowed(
+            table_cards=table,
+            chosen_card=choosen_card,
+            hand_cards=self.pyschieber_bot.cards,
+            trumpf=trumpf,
+        )
 
     def is_trumpf_allowed(self, chosen_trumpf):
         return trumpf_allowed(chosen_trumpf, self.geschoben)
@@ -267,9 +303,9 @@ class ServerPlayer:
     def pyschieber_stich(self, stich_player_id):
         trumpf = game_type_to_pyschieber_trumpf(self.game_type)
         stich = {
-            'player_id': stich_player_id,
-            'trumpf': trumpf,
-            'played_cards': self.table[:]
+            "player_id": stich_player_id,
+            "trumpf": trumpf,
+            "played_cards": self.table[:],
         }
         self.stiche.append(stich)
 

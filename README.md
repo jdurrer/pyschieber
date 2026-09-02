@@ -71,7 +71,7 @@ To get a first feeling for the pyschieber playground let's have a look at a runa
 
 1. The first thing you have to do, is to instantiate a new Tournament.
 ```python
-from pyschieber.tournament import Tournament  
+from pyschieber.tournament import Tournament
 
 tournament = Tournament(point_limit=1500)
 ```
@@ -82,8 +82,12 @@ from pyschieber.player.random_player import RandomPlayer
 from pyschieber.player.greedy_player.greedy_player import GreedyPlayer
 
 
-players = [RandomPlayer(name='Tick'), RandomPlayer(name='Trick'), 
-           RandomPlayer(name='Track'), GreedyPlayer(name='Dagobert')]
+players = [
+    RandomPlayer(name="Tick"),
+    RandomPlayer(name="Trick"),
+    RandomPlayer(name="Track"),
+    GreedyPlayer(name="Dagobert"),
+]
 
 [tournament.register_player(player) for player in players]
 ```

@@ -32,4 +32,4 @@ class ServerCard:
         return self.number == other.number and self.color == other.color
 
     def __repr__(self):
-        return "{} - {}".format(self.number, self.color)
+        return f"{self.number} - {self.color}"

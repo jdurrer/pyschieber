@@ -1,1 +1,2 @@
-class PreviouslyHadStichFlag: pass
+class PreviouslyHadStichFlag:
+    pass

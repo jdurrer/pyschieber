@@ -64,7 +64,7 @@ class CardCounter:
         """
         return self.round_leader(state) in [self.me.id, self.partner_id]
 
-    def round_leader(self, state: Status) -> None | int:
+    def round_leader(self, state: Status) -> int | None:
         """Gets player_id which currently controls the strongest card on the table.
 
         Args:

@@ -1,5 +1,8 @@
 from pyschieber.card import Card as PyschieberCard
-from pyschieber.player.server_player.helpers.parser.color_parser import suit_to_color, color_to_suit
+from pyschieber.player.server_player.helpers.parser.color_parser import (
+    color_to_suit,
+    suit_to_color,
+)
 from pyschieber.player.server_player.helpers.server_cards import ServerCard
 
 

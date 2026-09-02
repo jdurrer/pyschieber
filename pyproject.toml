@@ -86,14 +86,14 @@ testpaths = ["tests"]
 path = ".tmonrc"
 
 # ─────────────────────────────────────────────
-# RUFF CONFIGURATION (replaces ruff, isort, black settings)
+# RUFF CONFIGURATION
 # ─────────────────────────────────────────────
 [tool.ruff]
 # Same as Black's default line length
 line-length = 88
 
 # Target Python version (affects which syntax/features are valid)
-target-version = "py39"
+target-version = "py312"
 
 # Exclude directories from linting/formatting
 extend-exclude = [

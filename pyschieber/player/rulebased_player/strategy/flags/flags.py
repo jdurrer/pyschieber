@@ -1,8 +1,9 @@
 # Combines all Flag Classes in one file.
+from dataclasses import dataclass
 from typing import Union
+
 from pyschieber.card import Card
 from pyschieber.suit import Suit
-from dataclasses import dataclass
 
 
 @dataclass(slots=True, frozen=True)
@@ -14,6 +15,7 @@ class SuitVerworfenFlag:
     Attributes:
         color (Suit): The suit that has been discarded.
     """
+
     color: Suit
 
 
@@ -26,6 +28,7 @@ class DoesntHaveCardFlag:
     Attributes:
         card (Card): The card that the player does not have.
     """
+
     card: Card
 
 
@@ -38,6 +41,7 @@ class FailedToServeSuitFlag:
     Attributes:
         color (Suit): The suit that was not served.
     """
+
     color: Suit
 
 
@@ -50,6 +54,7 @@ class SuitAngezogenFlag:
     Attributes:
         color (Suit): The suit that is being held or has been drawn.
     """
+
     color: Suit
 
 
@@ -59,6 +64,7 @@ class PreviouslyHadStichFlag:
 
     This class is used to mark that a player has already taken at least one stich, which can be used for inference in game strategy.
     """
+
     pass
 
 
@@ -74,5 +80,5 @@ Flag = Union[
     FailedToServeSuitFlag,
     SuitAngezogenFlag,
     PreviouslyHadStichFlag,
-    NumberOfTrumpfFlag
+    NumberOfTrumpfFlag,
 ]

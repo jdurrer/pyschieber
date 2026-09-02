@@ -1,14 +1,14 @@
 from functools import partial
-from typing import List
+
 from pyschieber.card import Card
-from pyschieber.stich import Stich, PlayedCard
+from pyschieber.stich import PlayedCard, Stich
 from pyschieber.trumpf import Trumpf
 
 UNDER: int = 11
 NAELL: int = 9
 
 
-def stich_obe_unde(played_cards: List[PlayedCard], operation, trumpf: Trumpf) -> Stich:
+def stich_obe_unde(played_cards: list[PlayedCard], operation, trumpf: Trumpf) -> Stich:
     """
     Determines the winner of a trick for Obe-Abe or Unde-Ufe trumpf types.
 
@@ -24,11 +24,18 @@ def stich_obe_unde(played_cards: List[PlayedCard], operation, trumpf: Trumpf) ->
     """
     suit = played_cards[0].card.suit
     (_, index) = operation(
-        [(played_card.card.value, i) for i, played_card in enumerate(played_cards) if played_card.card.suit == suit])
-    return Stich(player=played_cards[index].player, played_cards=played_cards, trumpf=trumpf)
+        [
+            (played_card.card.value, i)
+            for i, played_card in enumerate(played_cards)
+            if played_card.card.suit == suit
+        ]
+    )
+    return Stich(
+        player=played_cards[index].player, played_cards=played_cards, trumpf=trumpf
+    )
 
 
-def stich_trumpf(played_cards: List[PlayedCard], trumpf: Trumpf) -> Stich:
+def stich_trumpf(played_cards: list[PlayedCard], trumpf: Trumpf) -> Stich:
     """
     Determines the winner of a trick when a trumpf suit is played.
 
@@ -41,11 +48,16 @@ def stich_trumpf(played_cards: List[PlayedCard], trumpf: Trumpf) -> Stich:
     Returns:
         Stich: A Stich namedtuple with the winning player, played cards, and trumpf.
     """
-    trumpfs: list[tuple[int, int]] = [(played_card.card.value, i) for i, played_card in enumerate(played_cards) if
-               played_card.card.suit.name == trumpf.name]
+    trumpfs: list[tuple[int, int]] = [
+        (played_card.card.value, i)
+        for i, played_card in enumerate(played_cards)
+        if played_card.card.suit.name == trumpf.name
+    ]
     if trumpfs:
         index = _stich_trumpf_cards(trumpfs=trumpfs)
-        return Stich(player=played_cards[index].player, played_cards=played_cards, trumpf=trumpf)
+        return Stich(
+            player=played_cards[index].player, played_cards=played_cards, trumpf=trumpf
+        )
     else:
         return stich_obe_unde(played_cards=played_cards, operation=max, trumpf=trumpf)
 
@@ -78,11 +90,15 @@ stich_rules: dict[Trumpf, partial[Stich]] = {
     Trumpf.UNDE_UFE: partial(stich_obe_unde, operation=min, trumpf=Trumpf.UNDE_UFE),
 }
 
-for trumpf in filter(lambda x: x not in [Trumpf.OBE_ABE, Trumpf.UNDE_UFE, Trumpf.SCHIEBEN], Trumpf):
+for trumpf in filter(
+    lambda x: x not in [Trumpf.OBE_ABE, Trumpf.UNDE_UFE, Trumpf.SCHIEBEN], Trumpf
+):
     stich_rules[trumpf] = partial(stich_trumpf, trumpf=trumpf)
 
 
-def card_allowed(table_cards: List[Card], chosen_card: Card, hand_cards: List[Card], trumpf: Trumpf) -> bool:
+def card_allowed(
+    table_cards: list[Card], chosen_card: Card, hand_cards: list[Card], trumpf: Trumpf
+) -> bool:
     """
     Determines if a chosen card can legally be played given the current table, hand, and trumpf.
 
@@ -110,15 +126,25 @@ def card_allowed(table_cards: List[Card], chosen_card: Card, hand_cards: List[Ca
 
     if first_suit == chosen_suit:
         return True
-    
+
     if trumpf in [Trumpf.OBE_ABE, Trumpf.UNDE_UFE]:
         hand_suits = set([hand_card.suit for hand_card in hand_cards])
     else:
         if chosen_suit.name == trumpf.name:
-            return not does_under_trumpf(table_cards=table_cards, chosen_card=chosen_card, hand_cards=hand_cards,
-                                         trumpf=trumpf)
-        hand_suits = set([card.suit for card in hand_cards if not is_trumpf_under(trumpf=trumpf, card=card)])
-    return not (first_suit in hand_suits)
+            return not does_under_trumpf(
+                table_cards=table_cards,
+                chosen_card=chosen_card,
+                hand_cards=hand_cards,
+                trumpf=trumpf,
+            )
+        hand_suits = set(
+            [
+                card.suit
+                for card in hand_cards
+                if not is_trumpf_under(trumpf=trumpf, card=card)
+            ]
+        )
+    return first_suit not in hand_suits
 
 
 def is_trumpf_under(trumpf: Trumpf, card: Card) -> bool:
@@ -137,7 +163,9 @@ def is_trumpf_under(trumpf: Trumpf, card: Card) -> bool:
     return card.suit.name == trumpf.name and card.value == UNDER
 
 
-def does_under_trumpf(table_cards: List[Card], chosen_card: Card, hand_cards: List[Card], trumpf: Trumpf) -> bool:
+def does_under_trumpf(
+    table_cards: list[Card], chosen_card: Card, hand_cards: list[Card], trumpf: Trumpf
+) -> bool:
     """
     Determines if the player is required to play the Under card of the trumpf suit.
 
@@ -152,21 +180,29 @@ def does_under_trumpf(table_cards: List[Card], chosen_card: Card, hand_cards: Li
     Returns:
         bool: True if the player must play the Under trumpf card, False otherwise.
     """
-    if is_chosen_card_best_trumpf(table_cards=table_cards, chosen_card=chosen_card, trumpf=trumpf):
+    if is_chosen_card_best_trumpf(
+        table_cards=table_cards, chosen_card=chosen_card, trumpf=trumpf
+    ):
         return False
-    
-    trumpf_cards_on_hand = [card for card in hand_cards if card.suit.name == trumpf.name]
+
+    trumpf_cards_on_hand = [
+        card for card in hand_cards if card.suit.name == trumpf.name
+    ]
 
     if len(trumpf_cards_on_hand) < len(hand_cards):
         return True
 
     for trumpf_card in trumpf_cards_on_hand:
-        if is_chosen_card_best_trumpf(table_cards=table_cards, chosen_card=trumpf_card, trumpf=trumpf):
+        if is_chosen_card_best_trumpf(
+            table_cards=table_cards, chosen_card=trumpf_card, trumpf=trumpf
+        ):
             return True
     return False
 
 
-def is_chosen_card_best_trumpf(table_cards: List[Card], chosen_card: Card, trumpf: Trumpf) -> bool:
+def is_chosen_card_best_trumpf(
+    table_cards: list[Card], chosen_card: Card, trumpf: Trumpf
+) -> bool:
     """
     Checks if the chosen card is the best trumpf card among those played on the table.
 
@@ -180,14 +216,20 @@ def is_chosen_card_best_trumpf(table_cards: List[Card], chosen_card: Card, trump
     Returns:
         bool: True if the chosen card is the best trumpf card, False otherwise.
     """
-    trumpfs = [(card.value, i) for i, card in enumerate(table_cards) if card.suit.name == trumpf.name]
+    trumpfs = [
+        (card.value, i)
+        for i, card in enumerate(table_cards)
+        if card.suit.name == trumpf.name
+    ]
     chosen_card_index = len(table_cards)
     trumpfs.append((chosen_card.value, chosen_card_index))
     winner_index = _stich_trumpf_cards(trumpfs=trumpfs)
     return winner_index == chosen_card_index
 
 
-def allowed_cards(hand_cards: List[Card] , table_cards: List[Card], trumpf: Trumpf) -> List[Card]:
+def allowed_cards(
+    hand_cards: list[Card], table_cards: list[Card], trumpf: Trumpf
+) -> list[Card]:
     """
     Returns a list of cards from the player's hand that are allowed to be played.
 

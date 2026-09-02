@@ -2,7 +2,10 @@ import itertools
 
 from constraint import Problem
 from constraint.solvers import OptimizedBacktrackingSolver
-from pyschieber.player.treePlayer.treesearch.ismcts.simple_csp import CardDistributionSolver
+
+from pyschieber.player.treePlayer.treesearch.ismcts.simple_csp import (
+    CardDistributionSolver,
+)
 
 
 class DummyStatus:
@@ -11,6 +14,7 @@ class DummyStatus:
     This dummy class exists only to satisfy the type requirement of CardDistributionSolver
     without introducing any game logic dependencies.
     """
+
     pass
 
 
@@ -126,24 +130,40 @@ def test_medium_sized_csp_runs_quickly() -> None:
     hand_card_lengths = [4, 4, 4, 3]
 
     # 20 cards, each can be held by any of the 4 players
-    possible_players_holding_card = [[0,1,2,3],[0,1,2,3],[0,1,2,3],[0],[2],[3],[0,1,3],[1,2],[3],[3],[0,1,2,3],[0,1,2,3],[0,1,2,3],[0,1,2,3],[0,1,2,3]]
+    possible_players_holding_card = [
+        [0, 1, 2, 3],
+        [0, 1, 2, 3],
+        [0, 1, 2, 3],
+        [0],
+        [2],
+        [3],
+        [0, 1, 3],
+        [1, 2],
+        [3],
+        [3],
+        [0, 1, 2, 3],
+        [0, 1, 2, 3],
+        [0, 1, 2, 3],
+        [0, 1, 2, 3],
+        [0, 1, 2, 3],
+    ]
 
     csp = CardDistributionSolver(hand_card_lengths, possible_players_holding_card)
 
     # Fetch only a small number of solutions to keep runtime low
     solutions_iter = csp.solve_iter()
     first_solutions = []
-    first_solutions.extend(
-        solution for _, solution in zip(range(5), solutions_iter)
-    )
+    first_solutions.extend(solution for _, solution in zip(range(5), solutions_iter))
     # We should get at least one valid solution
     assert first_solutions
 
     # Each solution must respect the hand_card_lengths constraint
     for sol in first_solutions:
-        assigned_values = tuple(sol[idx] for idx in range(len(possible_players_holding_card)))
+        assigned_values = tuple(
+            sol[idx] for idx in range(len(possible_players_holding_card))
+        )
         assert csp.occurrence_constraint(*assigned_values) is True
-        
+
 
 def test_main_does_not_raise() -> None:
     """Verify that the module-level main function executes without error.

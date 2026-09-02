@@ -3,6 +3,7 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
+
 from pyschieber.card import Card
 from pyschieber.suit import Suit
 from pyschieber.trumpf import Trumpf

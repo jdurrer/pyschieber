@@ -26,10 +26,12 @@ class CardDistributionSolver:
         possible_players_holding_card: A list of lists, where each inner list represents a card and the values represent which players are able to hold said card.
         state: The current game status used to contextualize the card distribution problem.
     """
-    def __init__(self,  
-                 hand_card_lengths: list[int], 
-                 possible_players_holding_card: list[list[int]], 
-                 ) -> None:
+
+    def __init__(
+        self,
+        hand_card_lengths: list[int],
+        possible_players_holding_card: list[list[int]],
+    ) -> None:
         """Initialize a new card distribution constraint satisfaction problem instance.
 
         This constructor prepares the internal state required to model card distributions
@@ -50,7 +52,6 @@ class CardDistributionSolver:
         self.problem: Problem = Problem(OptimizedBacktrackingSolver())
         self._initialize_problem()
 
-
     def occurrence_constraint(self, *assigned_values: int) -> bool:
         """Check whether the assigned values match the required hand card lengths.
 
@@ -66,8 +67,10 @@ class CardDistributionSolver:
         """
         value_counts: Counter[int] = Counter(assigned_values)
         expected_counts: list[int] = self.hand_card_lengths
-        return [value_counts.get(player_idx, 0) for player_idx in range(self.number_of_players)] == expected_counts
-    
+        return [
+            value_counts.get(player_idx, 0)
+            for player_idx in range(self.number_of_players)
+        ] == expected_counts
 
     def _initialize_problem(self) -> None:
         """Set up the CSP variables and constraints for card distribution.
@@ -83,7 +86,6 @@ class CardDistributionSolver:
         # self.problem.addVariables(variable_names, self.possible_players_holding_card)
         self.problem.addConstraint(self.occurrence_constraint, variable_names)
 
-
     def solve_iter(self) -> Iterator[Never] | Any:
         """Return an iterator over all valid card distribution solutions.
 
@@ -98,7 +100,7 @@ class CardDistributionSolver:
 
 
 def main() -> None:
-    print('This file cannot be run by itself.')
+    print("This file cannot be run by itself.")
 
 
 if __name__ == "__main__":

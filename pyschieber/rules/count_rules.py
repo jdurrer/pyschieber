@@ -1,7 +1,5 @@
-from typing import List, Dict
-from pyschieber.trumpf import Trumpf
 from pyschieber.card import Card
-
+from pyschieber.trumpf import Trumpf
 
 counting_factor: dict[Trumpf, int] = {
     Trumpf.ROSE: 1,
@@ -9,24 +7,69 @@ counting_factor: dict[Trumpf, int] = {
     Trumpf.BELL: 2,
     Trumpf.SHIELD: 2,
     Trumpf.OBE_ABE: 3,
-    Trumpf.UNDE_UFE: 3
-    }
+    Trumpf.UNDE_UFE: 3,
+}
 
 
-points_obe_abe: dict[int, int] = {6: 0, 7: 0, 8: 8, 9: 0, 10: 10, 11: 2, 12: 3, 13: 4, 14: 11}
-points_unde_ufe: dict[int, int] = {6: 11, 7: 0, 8: 8, 9: 0, 10: 10, 11: 2, 12: 3, 13: 4, 14: 0}
-points_trumpf_color: dict[int, int] = {6: 0, 7: 0, 8: 0, 9: 14, 10: 10, 11: 20, 12: 3, 13: 4, 14: 11}
-points_non_trumpf_color: dict[int, int] = {6: 0, 7: 0, 8: 0, 9: 0, 10: 10, 11: 2, 12: 3, 13: 4, 14: 11}
+points_obe_abe: dict[int, int] = {
+    6: 0,
+    7: 0,
+    8: 8,
+    9: 0,
+    10: 10,
+    11: 2,
+    12: 3,
+    13: 4,
+    14: 11,
+}
+points_unde_ufe: dict[int, int] = {
+    6: 11,
+    7: 0,
+    8: 8,
+    9: 0,
+    10: 10,
+    11: 2,
+    12: 3,
+    13: 4,
+    14: 0,
+}
+points_trumpf_color: dict[int, int] = {
+    6: 0,
+    7: 0,
+    8: 0,
+    9: 14,
+    10: 10,
+    11: 20,
+    12: 3,
+    13: 4,
+    14: 11,
+}
+points_non_trumpf_color: dict[int, int] = {
+    6: 0,
+    7: 0,
+    8: 0,
+    9: 0,
+    10: 10,
+    11: 2,
+    12: 3,
+    13: 4,
+    14: 11,
+}
 
 
-card_points: dict[Trumpf, dict[int, int]] = {Trumpf.OBE_ABE: points_obe_abe, Trumpf.UNDE_UFE: points_unde_ufe}
+card_points: dict[Trumpf, dict[int, int]] = {
+    Trumpf.OBE_ABE: points_obe_abe,
+    Trumpf.UNDE_UFE: points_unde_ufe,
+}
 
 
-for trumpf in filter(lambda x: x not in [Trumpf.OBE_ABE, Trumpf.UNDE_UFE, Trumpf.SCHIEBEN], Trumpf):
+for trumpf in filter(
+    lambda x: x not in [Trumpf.OBE_ABE, Trumpf.UNDE_UFE, Trumpf.SCHIEBEN], Trumpf
+):
     card_points[trumpf] = points_trumpf_color
 
 
-def count_stich(cards: List[Card], trumpf: Trumpf, last: bool = False) -> int:
+def count_stich(cards: list[Card], trumpf: Trumpf, last: bool = False) -> int:
     """
     Calculates the total points for a stich (trick) based on the cards played and the current trumpf.
 
@@ -41,7 +84,7 @@ def count_stich(cards: List[Card], trumpf: Trumpf, last: bool = False) -> int:
         int: The total points scored in the stich.
     """
     return (5 if last else 0) + sum(
-       (
+        (
             card_points[trumpf][card.value]
             if trumpf == Trumpf.OBE_ABE
             or trumpf == Trumpf.UNDE_UFE

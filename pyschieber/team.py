@@ -2,9 +2,8 @@
 # Libraries
 # ----------------------------
 
-from typing import List  # Required for Python < 3.9
-from pyschieber.helpers.typed_dict import TypedDictPlayer
 
+from pyschieber.helpers.typed_dict import TypedDictPlayer
 
 # ----------------------------
 # Class
@@ -12,18 +11,18 @@ from pyschieber.helpers.typed_dict import TypedDictPlayer
 
 
 class Team:
-
-    def __init__(self, players: List[TypedDictPlayer]): # removed  "players = None" as standard init
+    def __init__(
+        self, players: list[TypedDictPlayer]
+    ):  # removed  "players = None" as standard init
         self.points: int = 0
-        self.players: List[TypedDictPlayer] = players
-
+        self.players: list[TypedDictPlayer] = players
 
     def player_by_number(self, number: int) -> TypedDictPlayer | None:
         """
         Returns the player with the specified number from the team.
 
         Searches through the team's players and returns the player whose id matches the given number.
-        
+
         Args:
             number (int): The id number of the player to find.
 
@@ -35,7 +34,6 @@ class Team:
                 return player
         return None
 
-
     def won(self, point_limit: float) -> bool:
         """Checks if a team has won. Returns true if the point limit was reached.
 
@@ -43,10 +41,9 @@ class Team:
             point_limit (float): The given point limit to be reached for a team to win.
 
         Returns:
-            bool: True if point limit reached, false otherwise. 
+            bool: True if point limit reached, false otherwise.
         """
         return self.points >= point_limit
-    
 
     def reset_points(self) -> None:
         """

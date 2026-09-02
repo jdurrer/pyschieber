@@ -1,23 +1,23 @@
 import pytest
-from pyschieber.rules.count_rules import counting_factor
 
 from pyschieber.deck import Deck
-
+from pyschieber.game import Game, get_player_index
+from pyschieber.player.random_player import RandomPlayer
+from pyschieber.rules.count_rules import counting_factor
+from pyschieber.team import Team
+from pyschieber.tournament import Tournament
 from pyschieber.trumpf import Trumpf
 
-from pyschieber.player.random_player import RandomPlayer
-from pyschieber.tournament import Tournament
 
-from pyschieber.game import Game, get_player_index
-from pyschieber.team import Team
-
-
-@pytest.mark.parametrize("start_key, last_key", [
-    (0, 3),
-    (1, 0),
-    (2, 1),
-    (3, 2),
-])
+@pytest.mark.parametrize(
+    "start_key, last_key",
+    [
+        (0, 3),
+        (1, 0),
+        (2, 1),
+        (3, 2),
+    ],
+)
 def test_get_player_key(start_key, last_key):
     key = 0
     count = 0
@@ -43,12 +43,15 @@ def test_game() -> None:
         assert len(player.cards) == 0
 
 
-@pytest.mark.parametrize("start_key, next_key", [
-    (0, 1),
-    (1, 2),
-    (2, 3),
-    (3, 0),
-])
+@pytest.mark.parametrize(
+    "start_key, next_key",
+    [
+        (0, 1),
+        (1, 2),
+        (2, 3),
+        (3, 0),
+    ],
+)
 def test_get_player_index(start_key, next_key):
     generator = get_player_index(start_index=start_key)
     current_key = next(generator)

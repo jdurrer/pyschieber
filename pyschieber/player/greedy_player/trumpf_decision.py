@@ -2,18 +2,30 @@ from enum import Enum
 from operator import itemgetter
 
 from pyschieber.helpers.game_helper import *
-from pyschieber.trumpf import Trumpf
 from pyschieber.rules.count_rules import counting_factor
+from pyschieber.trumpf import Trumpf
 
 # https://www.jassverzeichnis.ch/index.php/blog/95-jass-tipps-trumpfansagen-schieber
-TrumpfType = Enum('TrumpfType',
-                  ['UNDER_4', 'NELL_ASS_5', 'UNDER_NELL_ASS', 'UNDER_NELL_3_2_ASS', 'STICHE_5', 'NO_TRUMPF',
-                   'HAVE_TO_DECIDE'])
+TrumpfType = Enum(
+    "TrumpfType",
+    [
+        "UNDER_4",
+        "NELL_ASS_5",
+        "UNDER_NELL_ASS",
+        "UNDER_NELL_3_2_ASS",
+        "STICHE_5",
+        "NO_TRUMPF",
+        "HAVE_TO_DECIDE",
+    ],
+)
 
 
 def choose_trumpf(cards, geschoben):
     candidates = []
-    for trumpf in filter(lambda x: x != Trumpf.OBE_ABE and x != Trumpf.UNDE_UFE and x != Trumpf.SCHIEBEN, Trumpf):
+    for trumpf in filter(
+        lambda x: x != Trumpf.OBE_ABE and x != Trumpf.UNDE_UFE and x != Trumpf.SCHIEBEN,
+        Trumpf,
+    ):
         trumpf_type = evalute_stich_trumpf(cards, trumpf.name)
         if not trumpf_type == TrumpfType.NO_TRUMPF:
             candidates.append((trumpf, trumpf_type))
@@ -44,15 +56,21 @@ def choose_candidate(candidates):
 
 def have_to_decide(cards):
     number_of_stiche = count_stiche_per_trumpf(cards)
-    number_of_stiche.append((Trumpf.OBE_ABE, len(count_stiche(cards=cards, best_card=14, step=-1))))
-    number_of_stiche.append((Trumpf.UNDE_UFE, len(count_stiche(cards=cards, best_card=6, step=1))))
+    number_of_stiche.append(
+        (Trumpf.OBE_ABE, len(count_stiche(cards=cards, best_card=14, step=-1)))
+    )
+    number_of_stiche.append(
+        (Trumpf.UNDE_UFE, len(count_stiche(cards=cards, best_card=6, step=1)))
+    )
     trumpf, count = max(number_of_stiche, key=itemgetter(1))
     return trumpf, TrumpfType.HAVE_TO_DECIDE
 
 
 def evalute_stich_trumpf(cards, suit_name):
     trumpf_card_values = [card.value for card in cards if card.suit.name == suit_name]
-    non_trumpf_card_values = [card.value for card in cards if card.suit.name != suit_name]
+    non_trumpf_card_values = [
+        card.value for card in cards if card.suit.name != suit_name
+    ]
     nell = bool(9 in trumpf_card_values)
     under = bool(11 in trumpf_card_values)
     ass = bool(14 in trumpf_card_values)

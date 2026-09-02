@@ -1,16 +1,15 @@
 import pytest
 
+from pyschieber.card import Card, from_string_to_card
 from pyschieber.suit import Suit
 
-from pyschieber.card import Card, from_string_to_card
 
-
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def card_string():
-    return '<ROSE:6>'
+    return "<ROSE:6>"
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def card():
     return Card(suit=Suit.ROSE, value=6)
 

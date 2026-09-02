@@ -1,5 +1,8 @@
 from pyschieber.player.server_player.helpers.messages import GameType
-from pyschieber.player.server_player.helpers.parser.color_parser import suit_to_color, color_to_suit
+from pyschieber.player.server_player.helpers.parser.color_parser import (
+    color_to_suit,
+    suit_to_color,
+)
 from pyschieber.suit import Suit
 from pyschieber.trumpf import Trumpf
 
@@ -20,7 +23,7 @@ def pyschieber_trumpf_to_game_type(pyschieber_trumpf):
 
 
 def game_type_to_pyschieber_trumpf(game_type):
-    if hasattr(game_type, 'trumpf_color'):
+    if hasattr(game_type, "trumpf_color"):
         color = game_type.trumpf_color
         suit = color_to_suit(color)
         return Trumpf[suit.name]

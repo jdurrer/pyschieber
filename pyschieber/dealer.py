@@ -1,26 +1,22 @@
-
 # ----------------------------
 # Libraries
 # ----------------------------
-from typing import List
-from pyschieber.helpers.typed_dict import TypedDictPlayer
 from random import shuffle
+
 from pyschieber.deck import Deck
+from pyschieber.helpers.typed_dict import TypedDictPlayer
 
 
 class Dealer:
-
-    def __init__(self, players: List[TypedDictPlayer]):
+    def __init__(self, players: list[TypedDictPlayer]):
         self.players = players
         self.deck: Deck = Deck()
 
-    
     def shuffle_cards(self) -> None:
         """
         Order Deck randomly
         """
         shuffle(self.deck.cards)
-
 
     def deal_cards_rotated(self) -> None:
         """Distributes cards to players after rotating the deck by one position.
@@ -33,13 +29,10 @@ class Dealer:
         for i, card in enumerate(self.deck.cards):
             self.players[i % 4].set_card(card=card)
 
-
     def deal_cards(self) -> None:
-        """Go through deck and give each player a card based on the deck's order.
-        """
+        """Go through deck and give each player a card based on the deck's order."""
         for i, card in enumerate(self.deck.cards):
             self.players[i % 4].set_card(card=card)
-        
 
     def show_deck(self) -> None:
         """Displays all cards currently in the deck.
@@ -47,14 +40,14 @@ class Dealer:
 
         Returns:
             None
-        """    
+        """
         for card in enumerate(self.deck.cards):
             print(card)
 
 
 def main() -> None:
-    print('This file cannot be run by itself.')
+    print("This file cannot be run by itself.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

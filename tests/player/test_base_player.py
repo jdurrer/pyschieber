@@ -1,5 +1,6 @@
-from pyschieber.player.base_player import BasePlayer
 from itertools import count
+
+from pyschieber.player.base_player import BasePlayer
 
 
 def test_base_player_counter():

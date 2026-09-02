@@ -43,7 +43,7 @@ class UncoloredTrumpf(Mode):
 
     def get_value_card(
         self, cards_by_suit: list[tuple[Suit, list[Card]]], state: Status
-    ) -> None | Card:
+    ) -> Card | None:
         """Determines and returns the value card to play based on the current game state.
 
         This function evaluates all available cards and selects the one with the lowest probability of being beaten by opponents, or returns None if not applicable.
@@ -824,7 +824,7 @@ class UncoloredTrumpf(Mode):
 
     def get_card_to_play_third_player(
         self, available_cards: list[Card], state: Status, role: str
-    ) -> None | Card:
+    ) -> Card | None:
         """Determines the best card to play as the third player based on the player's role.
 
         This function selects the optimal card to play as the third player, delegating to the appropriate strategy for the player's role (Trumpf, Partner, or Off), and considers whether to attempt to win the stich or toss a card.
@@ -854,7 +854,7 @@ class UncoloredTrumpf(Mode):
 
     def get_card_to_play(
         self, available_cards: list[Card], state: Status, role: str
-    ) -> None | Card:
+    ) -> Card | None:
         """Determines the optimal card to play based on the player's position and role.
 
         This function selects the best card to play by evaluating the player's position in the round, the current game state, and the player's role, delegating to specialized strategies for each scenario.

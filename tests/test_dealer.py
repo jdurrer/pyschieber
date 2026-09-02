@@ -1,14 +1,17 @@
 import pytest
 
-from pyschieber.player.random_player import RandomPlayer
-
 from pyschieber.dealer import Dealer
+from pyschieber.player.random_player import RandomPlayer
 
 
 @pytest.fixture(scope="function")
 def players():
-    return [RandomPlayer(name='Tick'), RandomPlayer(name='Trick'), RandomPlayer(name='Track'),
-            RandomPlayer(name='Dagobert')]
+    return [
+        RandomPlayer(name="Tick"),
+        RandomPlayer(name="Trick"),
+        RandomPlayer(name="Track"),
+        RandomPlayer(name="Dagobert"),
+    ]
 
 
 def test_deal_cards(players):

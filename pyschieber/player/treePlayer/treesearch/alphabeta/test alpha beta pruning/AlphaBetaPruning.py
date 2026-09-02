@@ -7,31 +7,34 @@ Returns:
 import random
 from time import time
 
-class Node:
 
-    def __init__(self, value = None):
-        self.children = None # List of nodes
+class Node:
+    def __init__(self, value=None):
+        self.children = None  # List of nodes
         self.value = value
-    
+
     def populate(self, depth, width):
         if depth > 1:
             self.children = []
             for _ in range(width):
-                self.children.append(Node()) # Do NEVER use vectorized version to create nodes. They will all be the same! bsp.: [Node()] * 5
+                self.children.append(
+                    Node()
+                )  # Do NEVER use vectorized version to create nodes. They will all be the same! bsp.: [Node()] * 5
             for child in self.children:
-                child.populate(depth = depth-1, width = width)
+                child.populate(depth=depth - 1, width=width)
         else:
             self.children = []
             for _ in range(width):
-                self.children.append(Node(random.randint(1,100)))
-    
-def plot(node, indent = ""):
+                self.children.append(Node(random.randint(1, 100)))
+
+
+def plot(node, indent=""):
     print(indent + str(node.value))
     indent += "-"
     if node.children is not None:
         for child in node.children:
             plot(child, indent)
-        
+
 
 class AlphaBeta:
     """alpha beta search very basic.
@@ -44,10 +47,10 @@ class AlphaBeta:
         self.game_tree = game_tree
         return
 
-    def alpha_beta_search(self, node = None): # this can be implemented better.
+    def alpha_beta_search(self, node=None):  # this can be implemented better.
         if node is None:
             node = self.game_tree
-        infinity = float('inf')
+        infinity = float("inf")
         best_val = -infinity
         beta = infinity
 
@@ -67,7 +70,7 @@ class AlphaBeta:
         # print "AlphaBeta–>MAX: Visited Node :: " + node.Name
         if self.isTerminal(node):
             return self.getUtility(node)
-        infinity = float('inf')
+        infinity = float("inf")
         value = -infinity
 
         successors = self.getSuccessors(node)
@@ -83,7 +86,7 @@ class AlphaBeta:
         # print "AlphaBeta–>MIN: Visited Node :: " + node.Name
         if self.isTerminal(node):
             return self.getUtility(node)
-        infinity = float('inf')
+        infinity = float("inf")
         value = infinity
 
         successors = self.getSuccessors(node)
@@ -95,6 +98,7 @@ class AlphaBeta:
             beta = min(beta, value)
 
         return value
+
     #                     #
     #   UTILITY METHODS   #
     #                     #
@@ -112,7 +116,7 @@ class AlphaBeta:
         return node.children
 
     def isTerminal(self, node):
-        """     # return true if the node has NO children (successor states)
+        """# return true if the node has NO children (successor states)
                 # return false if the node has children (successor states)
 
         Args:
@@ -127,6 +131,7 @@ class AlphaBeta:
     def getUtility(self, node):
         assert node is not None
         return node.value
+
 
 if __name__ == "__main__":
     """Creates a tree and then uses the AlphaBeta class to traverse it.
@@ -148,5 +153,5 @@ if __name__ == "__main__":
     end = time()
     print("alpha beta value: ", best_val)
     # plot(tree)
-    print('time spent pruning: ', end-startPrune)
-    print('time spent for everything: ', end-start)
+    print("time spent pruning: ", end - startPrune)
+    print("time spent for everything: ", end - start)

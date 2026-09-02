@@ -13,7 +13,7 @@ class GreedyPlayer(BasePlayer):
                 yield None
 
     def choose_card(self, state=None):
-        trumpf = Trumpf[state['trumpf']]
+        trumpf = Trumpf[state["trumpf"]]
         allowed_cards = self.allowed_cards(state=state)
         allowed = False
         while not allowed:

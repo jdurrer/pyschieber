@@ -1,15 +1,17 @@
-from pyschieber.player.challenge_player.strategy.mode.mode import Mode
-from pyschieber.helpers.game_helper import *
 from pyschieber.card import from_string_to_card
+from pyschieber.helpers.game_helper import *
+from pyschieber.player.challenge_player.strategy.mode.mode import Mode
 
 
 class UncoloredTrumpf(Mode):
     def get_card_to_play(self, available_cards, card_counter, state, role):
-        current_position = len(state['table'])
+        current_position = len(state["table"])
         cards_by_suit = split_cards_by_suit(available_cards)
 
         bocks = list(filter(lambda x: self.is_bock(x, card_counter), available_cards))
-        beating_current_stich = self.cards_beating_current_stich(available_cards, card_counter, state)
+        beating_current_stich = self.cards_beating_current_stich(
+            available_cards, card_counter, state
+        )
 
         if current_position == 0:
             if len(bocks) > 0:
@@ -24,37 +26,56 @@ class UncoloredTrumpf(Mode):
                 return self.get_tossable_card(available_cards, card_counter, state)
             return stich_card
         elif current_position == 2:
-            if role == 'Trumpf':
+            if role == "Trumpf":
                 if not card_counter.had_stich_previously(card_counter.my_id):
                     stich_card = self.get_stich_card(cards_by_suit, card_counter, state)
                     if stich_card is None:
-                        return self.get_tossable_card(available_cards, card_counter, state)
+                        return self.get_tossable_card(
+                            available_cards, card_counter, state
+                        )
                     return stich_card
                 else:
                     if not self.want_stich(cards_by_suit, card_counter, True, state):
-                        return self.get_tossable_card(available_cards, card_counter, state)
+                        return self.get_tossable_card(
+                            available_cards, card_counter, state
+                        )
                     else:
-                        stich_card = self.get_stich_card(cards_by_suit, card_counter, state)
+                        stich_card = self.get_stich_card(
+                            cards_by_suit, card_counter, state
+                        )
                         if stich_card is None:
-                            return self.get_tossable_card(available_cards, card_counter, state)
+                            return self.get_tossable_card(
+                                available_cards, card_counter, state
+                            )
                         return stich_card
 
-            elif role == 'Off':
+            elif role == "Off":
                 if self.want_stich(cards_by_suit, card_counter, True, state):
                     stich_card = self.get_stich_card(cards_by_suit, card_counter, state)
                     if stich_card is None:
-                        return self.get_tossable_card(available_cards, card_counter, state)
+                        return self.get_tossable_card(
+                            available_cards, card_counter, state
+                        )
                     return stich_card
 
-            elif role == 'Partner':
-                if card_counter.current_round() == 0 and card_counter.round_leader(state) == card_counter.partner_id:
+            elif role == "Partner":
+                if (
+                    card_counter.current_round() == 0
+                    and card_counter.round_leader(state) == card_counter.partner_id
+                ):
                     a2card = card_counter.current_stich[card_counter.partner_id]
                     if self.is_nth_nut(1, a2card, card_counter):
-                        round_color = from_string_to_card(state['table'][0]['card']).suit
-                        for card in [x[1] for x in cards_by_suit if x[0] == round_color][0]:
+                        round_color = from_string_to_card(
+                            state["table"][0]["card"]
+                        ).suit
+                        for card in [
+                            x[1] for x in cards_by_suit if x[0] == round_color
+                        ][0]:
                             if self.is_nth_nut(2, card, card_counter):
                                 play_2nd_nut = True
-                                for card2 in [x[1] for x in cards_by_suit if x[0] == round_color][0]:
+                                for card2 in [
+                                    x[1] for x in cards_by_suit if x[0] == round_color
+                                ][0]:
                                     if self.is_nth_nut(3, card2, card_counter):
                                         play_2nd_nut = False
 
@@ -79,7 +100,7 @@ class UncoloredTrumpf(Mode):
         return None
 
     def get_value_card(self, cards_by_suit, card_counter, state):
-        if len(state['table']) == 0:
+        if len(state["table"]) == 0:
             opponents_beating_card = {}
             for suit, suit_cards in cards_by_suit:
                 for card in suit_cards:
@@ -87,9 +108,13 @@ class UncoloredTrumpf(Mode):
                     if len(stronger) == 0:
                         opponents_beating_card[card] = 0
                     else:
-                        d1 = card_counter.has_card_likelihood(card_counter.opponent_1_id, card, state)
-                        d2 = card_counter.has_card_likelihood(card_counter.opponent_2_id, card, state)
-                        opponents_beating_card[card] = (d1+((1-d1)*d2))
+                        d1 = card_counter.has_card_likelihood(
+                            card_counter.opponent_1_id, card, state
+                        )
+                        d2 = card_counter.has_card_likelihood(
+                            card_counter.opponent_2_id, card, state
+                        )
+                        opponents_beating_card[card] = d1 + ((1 - d1) * d2)
 
             return min(opponents_beating_card, key=opponents_beating_card.get)
         return None
@@ -103,8 +128,21 @@ class UncoloredTrumpf(Mode):
                 if current_bock is None:
                     continue
 
-                if (card_counter.has_card_likelihood(card_counter.partner_id, current_bock, state) == 1) or \
-                    (card_counter.has_suit_likelihood(card_counter.opponent_1_id, suit, state) == 0 and card_counter.has_suit_likelihood(card_counter.opponent_2_id, suit, state) == 0):
+                if (
+                    card_counter.has_card_likelihood(
+                        card_counter.partner_id, current_bock, state
+                    )
+                    == 1
+                ) or (
+                    card_counter.has_suit_likelihood(
+                        card_counter.opponent_1_id, suit, state
+                    )
+                    == 0
+                    and card_counter.has_suit_likelihood(
+                        card_counter.opponent_2_id, suit, state
+                    )
+                    == 0
+                ):
                     play = self.sort_by_rank(cards)
                     return play[len(play) - 1]
 
@@ -143,7 +181,7 @@ class UncoloredTrumpf(Mode):
         if len(bd_suits) == 0:
             return None
         else:
-            return max(bd_suits,key=lambda item:item[1])[0]
+            return max(bd_suits, key=lambda item: item[1])[0]
 
     def want_stich(self, cards_by_suit, card_counter, player_acting_behind, state):
         we_can_make_all_stich = True
@@ -151,30 +189,68 @@ class UncoloredTrumpf(Mode):
 
         for suit, suit_cards in cards_by_suit:
             for card in suit_cards:
-                if not self.is_bock(card, card_counter) and \
-                    card_counter.has_card_likelihood(card_counter.opponent_1_id, card, state) > 0 or \
-                    card_counter.has_card_likelihood(card_counter.opponent_2_id, card, state) > 0:
+                if (
+                    not self.is_bock(card, card_counter)
+                    and card_counter.has_card_likelihood(
+                        card_counter.opponent_1_id, card, state
+                    )
+                    > 0
+                ) or card_counter.has_card_likelihood(
+                    card_counter.opponent_2_id, card, state
+                ) > 0:
                     we_can_make_all_stich = False
 
-        color = from_string_to_card(state['table'][0]['card']).suit
+        color = from_string_to_card(state["table"][0]["card"]).suit
         if not player_acting_behind:
-            if len([x[1] for x in split_cards_by_suit(card_counter.unknown_cards()) if x[0] == color]) == 0 and \
-                    len([x[1] for x in cards_by_suit if x[0] == color]) > 1:
+            if (
+                len(
+                    [
+                        x[1]
+                        for x in split_cards_by_suit(card_counter.unknown_cards())
+                        if x[0] == color
+                    ]
+                )
+                == 0
+                and len([x[1] for x in cards_by_suit if x[0] == color]) > 1
+            ):
                 we_lose_stich_if_we_dont = True
-        elif card_counter.has_suit_likelihood(card_counter.opponent_1_id, color, state) == 1:
-            if len([x[1] for x in split_cards_by_suit(card_counter.unknown_cards()) if x[0] == color]) == 1 and \
-                    len([x[1] for x in cards_by_suit if x[0] == color]) > 1:
+        elif (
+            card_counter.has_suit_likelihood(card_counter.opponent_1_id, color, state)
+            == 1
+        ):
+            if (
+                len(
+                    [
+                        x[1]
+                        for x in split_cards_by_suit(card_counter.unknown_cards())
+                        if x[0] == color
+                    ]
+                )
+                == 1
+                and len([x[1] for x in cards_by_suit if x[0] == color]) > 1
+            ):
                 we_lose_stich_if_we_dont = True
 
-        if card_counter.round_leader(state) == card_counter.partner_id and ( not player_acting_behind or \
-                card_counter.has_cards_likelihood(card_counter.opponent_1_id, self.cards_beating_current_stich(card_counter.unknown_cards(), card_counter, state), state) == 0):
+        if card_counter.round_leader(state) == card_counter.partner_id and (
+            not player_acting_behind
+            or card_counter.has_cards_likelihood(
+                card_counter.opponent_1_id,
+                self.cards_beating_current_stich(
+                    card_counter.unknown_cards(), card_counter, state
+                ),
+                state,
+            )
+            == 0
+        ):
             partner_is_not_certain_to_win = False
         else:
             partner_is_not_certain_to_win = True
 
-        return (we_can_make_all_stich or we_lose_stich_if_we_dont or partner_is_not_certain_to_win)
+        return (
+            we_can_make_all_stich
+            or we_lose_stich_if_we_dont
+            or partner_is_not_certain_to_win
+        )
 
-
-
-    def sort_by_rank(self, cards): pass
-
+    def sort_by_rank(self, cards):
+        pass

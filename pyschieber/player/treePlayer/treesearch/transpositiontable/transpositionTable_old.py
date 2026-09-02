@@ -1,11 +1,17 @@
-import numpy as np
-from pyschieber.card import Card
-from pyschieber.player.treePlayer.treesearch.helper import cardToBitwise, BitwiseToCards, trumpf_to_value, rotate_cards, rotate_trumpf
-from pyschieber.stich import PlayedCard
-from pyschieber.deck import Deck
-from random import shuffle
-from pyschieber.trumpf import Trumpf
 import pickle
+
+import numpy as np
+
+from pyschieber.player.treePlayer.treesearch.helper import (
+    BitwiseToCards,
+    cardToBitwise,
+    rotate_cards,
+    rotate_trumpf,
+    trumpf_to_value,
+)
+from pyschieber.stich import PlayedCard
+from pyschieber.trumpf import Trumpf
+
 
 def createUniqueKeys():
     """Creates unique keys for the transposition table. Do only run this code one and save state seed.
@@ -24,38 +30,44 @@ def createUniqueKeys():
             suit: siehe oben
             value: siehe oben
             PlayerID: Id of the player? Normalized ID of the player? #!!!
-    
+
     Mode: 1d array. [obeabe,uneufe] obeabe oder uneufe. Trumpf is special variant of obeabe where trumpf was not played.
 
     Returns:
         pickle: saves transposition table keys as file.
     """
 
-    #get and save state.
+    # get and save state.
     np.random.seed(None)
     prng = np.random.RandomState()
     seed = prng.get_state()
 
-    #size = [suit, value, position_on_table]
-    tableState = np.random.randint(1,18_446_744_073_709_551_615,size=(5,9,2),dtype='uint64')
+    # size = [suit, value, position_on_table]
+    tableState = np.random.randint(
+        1, 18_446_744_073_709_551_615, size=(5, 9, 2), dtype="uint64"
+    )
 
-    #size = [suit, value, PlayerID]
-    handState = np.random.randint(1,18_446_744_073_709_551_615,size=(5,9,4),dtype='uint64')
+    # size = [suit, value, PlayerID]
+    handState = np.random.randint(
+        1, 18_446_744_073_709_551_615, size=(5, 9, 4), dtype="uint64"
+    )
 
-    #size = [2]
-    mode = np.random.randint(1,18_446_744_073_709_551_615,size=(2),dtype='uint64')
+    # size = [2]
+    mode = np.random.randint(1, 18_446_744_073_709_551_615, size=(2), dtype="uint64")
 
-    keys = {1:tableState,2:handState,3:mode,4:seed}
-    file = open('keys.pickle', 'wb')
+    keys = {1: tableState, 2: handState, 3: mode, 4: seed}
+    file = open("keys.pickle", "wb")
     pickle.dump(keys, file)
-    #should be saved under "example" folder.
+    # should be saved under "example" folder.
     file.close()
 
+
 def load_keys():
-    file = open('keys.pickle', 'rb')
+    file = open("keys.pickle", "rb")
     keys = pickle.load(file)
     file.close()
     return keys[1], keys[2], keys[3], keys[4]
+
 
 class TranspositionTable:
     # def __init__(self):
@@ -68,14 +80,17 @@ class TranspositionTable:
     #     self.transpositions_size = np.uint16(65535)
 
     def __init__(self) -> None:
-        """load Transposition table from file to always have same random values!
-        """
+        """load Transposition table from file to always have same random values!"""
         self.tableState, self.handState, self.mode, seed = load_keys()
         self.INT_BITS = 64
         self.transpositions = {}
-        self.transpositions_size = np.uint64(18_446_744_073_709_551_557) #largest prime in 64-bit
-    
-    def getZobristHash(self, player_cards: dict, table_cards: list, trumpf: Trumpf) -> int:
+        self.transpositions_size = np.uint64(
+            18_446_744_073_709_551_557
+        )  # largest prime in 64-bit
+
+    def getZobristHash(
+        self, player_cards: dict, table_cards: list, trumpf: Trumpf
+    ) -> int:
         """_summary_
 
         Args:
@@ -85,7 +100,7 @@ class TranspositionTable:
         Returns:
             int: key
         """
-        
+
         # rewrite hand cards of players with zobrist hash.
         zobrist_playerCards = np.uint32(0)
         for player_id, cards in player_cards.items():
@@ -99,8 +114,8 @@ class TranspositionTable:
 
         # get zobrist of played suit:
         if table_cards:
-            suit = table_cards[0].card.suit.value-1
-            suit = self.suittable[suit,0]
+            suit = table_cards[0].card.suit.value - 1
+            suit = self.suittable[suit, 0]
         else:
             suit = 0
 
@@ -112,13 +127,13 @@ class TranspositionTable:
             product = np.multiply(cardToBitwise(card.card), self.hashtable)
             for val in np.nditer(product):
                 if val != 0:
-                    temp  ^= np.uint32(val)
+                    temp ^= np.uint32(val)
             temp = self.leftRotate(temp, player_id)
-            zobrist ^= temp            
+            zobrist ^= temp
         table_cards = self.leftRotate(zobrist, 4)
 
         # get zobrist for trumpf
-        trumpfhash = self.trumpftable[trumpf_to_value(trumpf),0]
+        trumpfhash = self.trumpftable[trumpf_to_value(trumpf), 0]
 
         # generate unique key.
         key = table_cards ^ suit
@@ -127,18 +142,24 @@ class TranspositionTable:
         return np.uint32(key)
 
     def leftRotate(self, number, distance):
-        return np.uint32(np.left_shift(number, distance) | np.right_shift(number, (self.INT_BITS - distance)))
+        return np.uint32(
+            np.left_shift(number, distance)
+            | np.right_shift(number, (self.INT_BITS - distance))
+        )
 
     def rightRotate(self, number, distance):
-        return np.uint32(np.right_shift(number, distance)| np.left_shift(number, (self.INT_BITS - distance)))
+        return np.uint32(
+            np.right_shift(number, distance)
+            | np.left_shift(number, (self.INT_BITS - distance))
+        )
 
     def add_zobristHash(self, key, value):
         assert isinstance(key, np.uint32)
         if len(self.transpositions) >= self.transpositions_size:
-            print('Transposition table is full.')
+            print("Transposition table is full.")
             first_key = next(iter(self.transpositions))
             self.transpositions.pop(first_key)
-        self.transpositions[key] = np.uint16(value)      
+        self.transpositions[key] = np.uint16(value)
 
     def lookup_zobristHash(self, zobrist):
         return self.transpositions.get(zobrist)
@@ -159,7 +180,7 @@ class TranspositionTable:
             value = self.lookup_zobristHash(hash)
             if value != None:
                 return value
-            
+
             for index, playerCards in player_cards.items():
                 temp = rotate_cards(cardToBitwise(playerCards))
                 player_cards[index] = BitwiseToCards(temp)
@@ -172,5 +193,5 @@ class TranspositionTable:
         return None
 
 
-if __name__ == '__main__':
-    print('This code is not executable!')
+if __name__ == "__main__":
+    print("This code is not executable!")

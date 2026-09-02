@@ -28,5 +28,5 @@ def test_deck_min():
 def test_deck_sort():
     deck = Deck()
     sorted(deck.cards)
-    assert Card.names[deck.cards[0].value] == '6'
-    assert Card.names[deck.cards[-1].value] == 'Ass'
+    assert Card.names[deck.cards[0].value] == "6"
+    assert Card.names[deck.cards[-1].value] == "Ass"

@@ -1,6 +1,7 @@
+import asyncio
 import json
 import logging
-import asyncio
+
 import websockets
 
 from pyschieber.player.server_player.helpers import messages
@@ -22,7 +23,7 @@ class WebSocketHandler:
                 except websockets.exceptions.ConnectionClosed:
                     self.started = False
                     break
-                logger.debug("Received message {}".format(message))
+                logger.debug(f"Received message {message}")
                 payload = json.loads(message)
                 type = payload["type"]
                 try:
@@ -35,7 +36,7 @@ class WebSocketHandler:
                     incoming = messages.create(type, payload_data)
                     answer = self.bot.handle_message(incoming)
                 except:
-                    logger.exception("Handling {} caused an error".format(incoming))
+                    logger.exception(f"Handling {incoming} caused an error")
                 if answer:
                     await websocket.send(json.dumps(answer))
 

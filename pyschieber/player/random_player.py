@@ -11,7 +11,7 @@ class RandomPlayer(BasePlayer):
     def choose_card(self, state=None):
         cards = self.allowed_cards(state=state)
         return move(choices=cards)
-    
+
     def get_weis_cards(self, weisCards):
         pass
 
