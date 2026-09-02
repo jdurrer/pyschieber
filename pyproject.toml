@@ -157,7 +157,7 @@ docstring-code-format = true     # Format code in docstrings
 # TYPE CHECKING CONFIG
 # ─────────────────────────────────────────────
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.12"
 strict = true                    # Enable all strict mode flags
 warn_return_any = true
 warn_unused_configs = true

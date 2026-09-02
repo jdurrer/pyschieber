@@ -104,3 +104,11 @@ ENV/
 pytest_cache/
 .pytest_cache
 .idea/
+
+#git
+.github/hooks/
+.github/skills/
+.git/
+
+#sourcery
+sourcery.yaml

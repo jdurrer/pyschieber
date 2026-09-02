@@ -3,6 +3,9 @@
 | File Path | Description |
 |---|---|
 | `PROJECT_TODO.md` | Development roadmap for the card-game agent, IS-MCTS, PySpiel integration, testing, and related research. |
+| `agents/domain.md` | _(needs a description)_ |
+| `agents/issue-tracker.md` | _(needs a description)_ |
+| `agents/triage-labels.md` | _(needs a description)_ |
 | `engineering/ask-matt.md` | _(needs a description)_ |
 | `engineering/code-review.md` | _(needs a description)_ |
 | `engineering/codebase-design.md` | _(needs a description)_ |

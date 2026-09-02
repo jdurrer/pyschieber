@@ -55,7 +55,7 @@ class TreePlayer(RuleBasedPlayer):
                 evaluator = RandomRolloutEvaluator()
                 informationset = initialize_card_distribution(self)
                 ismcts = ISMCTSBot(
-                    evaluator, 100, informationset
+                    evaluator, 300, informationset
                 )  # TODO  change the max_simulations of ISMCTSBot. make it dynamic based on how many cards are left?
                 game_state = rebuild_game(self, status)
                 policy = ismcts.get_policy(game_state)

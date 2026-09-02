@@ -5,7 +5,7 @@ from pyschieber.tournament import Tournament
 
 def run_statistics(players):
     point_limit = 100
-    number_of_tournaments = 10
+    number_of_tournaments = 100
 
     tournament = Tournament(point_limit=point_limit)
     [tournament.register_player(player=player) for player in players]
@@ -23,7 +23,9 @@ def run_statistics(players):
             team_2_won += 1
 
     end = timer()
-    print("\nTo run {0} tournaments it took {1:.2f} seconds.".format(number_of_tournaments, end - start))
+    print(
+        f"\nTo run {number_of_tournaments} tournaments it took {end - start:.2f} seconds."
+    )
 
     difference = abs(team_1_won - team_2_won)
     print("Difference: ", difference)
