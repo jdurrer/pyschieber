@@ -36,7 +36,7 @@ class TreePlayer(RuleBasedPlayer):
         informationset.set_hamming_distance(int(200 / upper_bound_informationset))
         ismcts = ISMCTSBot(
             evaluator,
-            2000,
+            5000,
             informationset,
             max_world_samples=upper_bound_informationset,
         )
@@ -46,7 +46,8 @@ class TreePlayer(RuleBasedPlayer):
 
     def choose_card(  # type: ignore
         self,
-        state: StatusDict = None,  # type: ignore
+        state: StatusDict = None,  # type: ignore,
+        max_remaining_handcards: int = 2,
     ) -> Generator[Card | None, None, None]:
         """Yields possible card choices until an allowed card is selected.
 
@@ -54,6 +55,7 @@ class TreePlayer(RuleBasedPlayer):
 
         Args:
             state (StatusDict, optional): The current game state.
+            max_remaining_handcards (int, optional): The maximum number of hand cards allowed before starting the treesearch. Defaults to 2.
 
         Returns:
             Generator[Card | None, None, None]: Yields card choices and None when an allowed card is selected.
@@ -71,7 +73,10 @@ class TreePlayer(RuleBasedPlayer):
         while not allowed:
             card = self.strategy.choose_card(cards, state)
 
-            if not isinstance(card, Card) and len(self.cards) <= 3:
+            if (
+                not isinstance(card, Card)
+                and len(self.cards) <= max_remaining_handcards
+            ):
                 card = self.get_card_by_treesearch(status)
 
             if not isinstance(card, Card):

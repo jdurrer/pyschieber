@@ -18,7 +18,7 @@ from pyschieber.tournament import Tournament
 #########################################
 
 
-Spielrunden = 5
+Spielrunden = 100
 benchmark_bool = True
 weisen_bool = False
 counting_factor_bool = False
