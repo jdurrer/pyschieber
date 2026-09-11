@@ -5,6 +5,7 @@ This is the hub index for the repository. Start with the spoke that matches the 
 | Area | Index |
 |---|---|
 | Documentation | [docs/INDEX.md](docs/INDEX.md) |
+| Benchmarks | [benchmark/INDEX.md](benchmark/INDEX.md) |
 | Project knowledge | [knowledge/INDEX.md](knowledge/INDEX.md) |
 | Package | [pyschieber/INDEX.md](pyschieber/INDEX.md) |
 | Tests | [tests/INDEX.md](tests/INDEX.md) |

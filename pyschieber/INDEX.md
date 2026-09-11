@@ -26,6 +26,7 @@
 | `example/server_launcher.py` | No module docstring. |
 | `example/state_validation.py` | No module docstring. |
 | `game.py` | No module docstring. |
+| `games.pickle` | Serialized game data used by the package's example and search workflows. |
 | `helpers/__init__.py` | No module docstring. |
 | `helpers/custom_wrappers.py` | No module docstring. |
 | `helpers/game_helper.py` | No module docstring. |

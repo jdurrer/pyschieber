@@ -25,3 +25,11 @@ def test_from_string_to_card(card, card_string):
 def test_from_string_not_card(card):
     rose_7 = Card(suit=Suit.ROSE, value=7)
     assert card != from_string_to_card(str(rose_7))
+
+
+def test_card_fields_are_immutable(card):
+    with pytest.raises(AttributeError):
+        card.suit = Suit.BELL
+
+    with pytest.raises(AttributeError):
+        card.value = 7

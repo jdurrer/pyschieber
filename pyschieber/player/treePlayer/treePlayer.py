@@ -36,7 +36,7 @@ class TreePlayer(RuleBasedPlayer):
         informationset.set_hamming_distance(int(200 / upper_bound_informationset))
         ismcts = ISMCTSBot(
             evaluator,
-            5000,
+            3500,
             informationset,
             max_world_samples=upper_bound_informationset,
         )

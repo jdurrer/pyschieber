@@ -92,6 +92,47 @@ def test_clone_is_independent() -> None:
     assert len(clone.cards_on_table) == 1
 
 
+def test_clone_copies_state_graph_without_sharing_mutable_objects() -> None:
+    state = _build_game_state()
+    state.trumpf = Trumpf.BELL
+    state.point_limit = 42
+    state.geschoben = True
+    state.teams[0].points = 12
+    state.players[0].cards = [Card(Suit.BELL, 6)]
+    played_card = PlayedCard(
+        player=state.players[1],
+        card=Card(Suit.ROSE, 7),
+    )
+    state.cards_on_table = [played_card]
+    state.stiche = [
+        Stich(
+            player=state.players[0],
+            played_cards=[played_card],
+            trumpf=Trumpf.BELL,
+        )
+    ]
+
+    clone = state.clone()
+
+    assert clone is not state
+    assert clone.players[0] is not state.players[0]
+    assert clone.teams[0] is not state.teams[0]
+    assert clone.teams[0].players[0] is clone.players[0]
+    assert clone.cards_on_table[0].player is clone.players[1]
+    assert clone.stiche[0].player is clone.players[0]
+    assert clone.stiche[0].played_cards[0].player is clone.players[1]
+    assert clone.point_limit == state.point_limit
+    assert clone.geschoben == state.geschoben
+    assert clone.trumpf == state.trumpf
+    assert clone.teams[0].points == state.teams[0].points
+
+    clone.players[0].cards.clear()
+    clone.teams[0].points = 99
+
+    assert state.players[0].cards == [Card(Suit.BELL, 6)]
+    assert state.teams[0].points == 12
+
+
 def test_is_terminal_after_nine_tricks() -> None:
     state = _build_game_state()
     state.stiche = [object()] * 9

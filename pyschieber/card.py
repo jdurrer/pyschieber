@@ -2,12 +2,19 @@
 # Libraries
 # ----------------------------
 
+from dataclasses import dataclass
+from typing import ClassVar
+
 from pyschieber.suit import Suit
 from pyschieber.trumpf import Trumpf
 
 
+@dataclass(frozen=True, slots=True)
 class Card:
-    names: dict[int, str] = {
+    suit: Suit
+    value: int
+
+    names: ClassVar[dict[int, str]] = {
         6: "6",
         7: "7",
         8: "8",
@@ -18,8 +25,8 @@ class Card:
         13: "Koennig",
         14: "Ass",
     }
-    values: dict[str, int] = {v: k for k, v in names.items()}
-    trumpf_rank: dict[int, int] = {
+    values: ClassVar[dict[str, int]] = {v: k for k, v in names.items()}
+    trumpf_rank: ClassVar[dict[int, int]] = {
         6: 6,
         7: 7,
         8: 8,
@@ -30,11 +37,7 @@ class Card:
         9: 15,
         11: 16,
     }
-    format_string: str = "<{0}:{1}>"
-
-    def __init__(self, suit: Suit, value: int) -> None:
-        self.suit = suit
-        self.value = value
+    format_string: ClassVar[str] = "<{0}:{1}>"
 
     def __lt__(self, other: "Card") -> bool:
         return self.value < other.value
@@ -46,7 +49,7 @@ class Card:
         return self.suit == other.suit and self.value == other.value
 
     def __hash__(self) -> int:
-        return hash(str(self))
+        return hash((self.suit, self.value))
 
     def __str__(self) -> str:
         """Returns a string representation of the card.

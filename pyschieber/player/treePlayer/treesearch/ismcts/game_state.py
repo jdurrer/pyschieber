@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from copy import deepcopy
-from typing import TYPE_CHECKING, NoReturn, Self
+from copy import copy
+from typing import TYPE_CHECKING, NoReturn, Self, cast
 
 import numpy as np
 
@@ -25,7 +25,7 @@ from pyschieber.player.rulebased_player.helpers.state_dict_to_dataclass import (
 )
 from pyschieber.player.treePlayer.treesearch.helper import array_to_list_of_cards
 from pyschieber.rules.stich_rules import stich_rules
-from pyschieber.stich import PlayedCard
+from pyschieber.stich import PlayedCard, Stich
 from pyschieber.team import Team
 from pyschieber.trumpf import get_trumpf
 
@@ -178,13 +178,100 @@ class GameState(Game):
     def clone(self) -> Self:
         """Create and return a copy of this search state instance.
 
-        This method is intended to provide an independent duplicate that can be
-        used for search without affecting the original state.
+        The clone owns its mutable simulation state and player hands. Card and
+        enum instances are reused because they are treated as immutable by the
+        game. Players with strategy state are rejected until they provide an
+        explicit player-specific clone operation.
 
         Returns:
-            SearchState: A new instance representing a copy of the current search state.
+            Self: A new instance representing a copy of the current search state.
+
+        Raises:
+            TypeError: If a player carries strategy state that this lightweight
+                clone cannot safely copy.
         """
-        return deepcopy(self)
+        cloned_players = [_clone_player(player) for player in self.players]
+        cloned_teams = [
+            Team(
+                players=[
+                    cast("TypedDictPlayer", cloned_players[0]),
+                    cast("TypedDictPlayer", cloned_players[2]),
+                ]
+            ),
+            Team(
+                players=[
+                    cast("TypedDictPlayer", cloned_players[1]),
+                    cast("TypedDictPlayer", cloned_players[3]),
+                ]
+            ),
+        ]
+        cloned = type(self)(
+            teams=cloned_teams,
+            id=self.id,
+            point_limit=self.point_limit,
+            use_counting_factor=self.use_counting_factor,
+        )
+        cloned.geschoben = self.geschoben
+        cloned.trumpf = self.trumpf
+        cloned.cards_on_table = [
+            _clone_played_card(played_card, cloned_players)
+            for played_card in self.cards_on_table
+        ]
+        cloned.stiche = [
+            Stich(
+                player=_cloned_player(stich.player, cloned_players),
+                played_cards=[
+                    _clone_played_card(played_card, cloned_players)
+                    for played_card in stich.played_cards
+                ],
+                trumpf=stich.trumpf,
+            )
+            for stich in self.stiche
+        ]
+        for cloned_team, source_team in zip(cloned.teams, self.teams):
+            cloned_team.points = source_team.points
+        return cloned
+
+
+def _clone_player(player: BasePlayer) -> BasePlayer:
+    """Create a lightweight copy of a player used by the search state.
+
+    Args:
+        player: Player to copy.
+
+    Returns:
+        A player of the same concrete type with independent hand/config lists.
+
+    Raises:
+        TypeError: If the player has strategy state requiring a dedicated clone.
+    """
+    if hasattr(player, "strategy"):
+        raise TypeError(
+            "GameState.clone does not support players with strategy state yet"
+        )
+    cloned_player = copy(player)
+    cloned_player.cards = list(player.cards)
+    cloned_player.trumpf_list = list(player.trumpf_list)
+    return cloned_player
+
+
+def _cloned_player(player: BasePlayer, cloned_players: list[BasePlayer]) -> BasePlayer:
+    """Find the corresponding cloned player by id."""
+    if player.id is None:
+        raise ValueError("A played player must have an id")
+    return cloned_players[player.id]
+
+
+def _clone_played_card(
+    played_card: PlayedCard, cloned_players: list[BasePlayer]
+) -> PlayedCard:
+    """Rebuild a played card with the corresponding cloned player."""
+    return PlayedCard(
+        player=cast(
+            "TypedDictPlayer", _cloned_player(played_card.player, cloned_players)
+        ),
+        card=played_card.card,
+    )
 
 
 def card_to_history_string(card: Card) -> str:
